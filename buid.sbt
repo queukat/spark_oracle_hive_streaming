@@ -15,5 +15,5 @@ libraryDependencies ++= Seq(
 resolvers ++= Seq(
   "Spark Packages Repo" at "https://dl.bintray.com/spark-packages/maven/",
   "Maven Central" at "https://repo1.maven.org/maven2/",
-  "Oracle Jar" at "https://mvnrepository.com/artifact/com.oracle.database.jdbc/ojdbc8"
+  "Oracle Jar" at "https://repo1.maven.org/maven2/com/oracle/database/jdbc/ojdbc8/21.6.0.0.1/"
 )
