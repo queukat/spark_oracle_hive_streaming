@@ -11,3 +11,8 @@ libraryDependencies ++= Seq(
   "com.oracle.jdbc" % "ojdbc8" % "19.7.0.0"
 )
 
+
+resolvers ++= Seq(
+  "Spark Packages Repo" at "https://dl.bintray.com/spark-packages/maven/",
+  "Maven Central" at "https://repo1.maven.org/maven2/"
+)
