@@ -1,10 +1,26 @@
+import org.apache.spark.sql.{SparkSession, DataFrame}
+import org.apache.spark.sql.types._
+import org.apache.spark.sql.functions._
+import scala.collection.JavaConversions._
+import scala.language.implicitConversions
+
+
 object NewSpark {
-  def migrate(): Unit = {
+
+  def migrate(
+               url: String,
+               oracleUser: String,
+               oraclePassword: String,
+               tableName: String,
+               owner: String,
+               hivetable: String
+             ): Unit = {
     val spark = SparkSession
       .builder()
       .appName("OracleToHiveMigrator")
       .enableHiveSupport()
       .getOrCreate()
+    import spark.implicits._
 
     val jdbcOptions = Map(
       "url" -> url,

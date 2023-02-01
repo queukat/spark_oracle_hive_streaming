@@ -1,6 +1,8 @@
 import org.apache.spark.sql.SparkSession
 import org.apache.spark.sql.types._
 import org.apache.spark.sql.functions._
+import org.apache.spark._
+import java.sql.Timestamp
 
 object OracleToHive {
   def main(args: Array[String]): Unit = {
@@ -18,7 +20,14 @@ object OracleToHive {
     val streamingInterval = 10 //seconds
 
     //Get Oracle Table Schema
-    val oracleTableSchema = spark.read.format("jdbc").option("url", jdbcUrl).option("dbtable", jdbcTable).option("user", jdbcUser).option("password", jdbcPassword).option("driver", "oracle.jdbc.driver.OracleDriver").load().schema
+    val oracleTableSchema = spark.read.format("jdbc")
+      .option("url", jdbcUrl)
+      .option("dbtable", jdbcTable)
+      .option("user", jdbcUser)
+      .option("password", jdbcPassword)
+      .option("driver", "oracle.jdbc.driver.OracleDriver")
+      .load()
+      .schema
 
     //Cast Oracle Column Data Types
     val castedSchema = oracleTableSchema.map(field => {
@@ -31,11 +40,37 @@ object OracleToHive {
     })
 
     //Download Table in Hive with ORC Format
-    spark.read.format("jdbc").option("url", jdbcUrl).option("dbtable", jdbcTable).option("user", jdbcUser).option("password", jdbcPassword).option("driver", "oracle.jdbc.driver.OracleDriver").load(castedSchema:_*).write.format(hiveFormat).mode("overwrite").partitionBy(hivePartitionColumns:_*).saveAsTable(hiveDatabase + "." + hiveTable)
+    spark.read.format("jdbc")
+      .option("url", jdbcUrl)
+      .option("dbtable", jdbcTable)
+      .option("user", jdbcUser)
+      .option("password", jdbcPassword)
+      .option("driver", "oracle.jdbc.driver.OracleDriver")
+      .load(castedSchema:_*)
+      .write
+      .format(hiveFormat)
+      .mode("overwrite")
+      .partitionBy(hivePartitionColumns:_*)
+      .saveAsTable(s"$hiveDatabase.$hiveTable")
 
     //Change Data Capture of Oracle Table using Spark Streaming from JDBC
-    val streamingDF = spark.readStream.format("jdbc").option("url", jdbcUrl).option("dbtable", jdbcTable).option("user", jdbcUser).option("password", jdbcPassword).option("driver", "oracle.jdbc.driver.OracleDriver").load(castedSchema:_*)
-    val streamingQuery = streamingDF.writeStream.format(hiveFormat).option("checkpointLocation", hivePartitionLocation).outputMode("append").partitionBy(hivePartitionColumns:_*).start(hiveDatabase + "." + hiveTable)
+    val streamingDF = spark.readStream
+      .format("jdbc")
+      .option("url", jdbcUrl)
+      .option("dbtable", jdbcTable)
+      .option("user", jdbcUser)
+      .option("password", jdbcPassword)
+      .option("driver", "oracle.jdbc.driver.OracleDriver")
+      .load(castedSchema:_*)
+
+
+    val streamingQuery = streamingDF.writeStream
+      .format(hiveFormat)
+      .option("checkpointLocation", hivePartitionLocation)
+      .outputMode("append")
+      .partitionBy(hivePartitionColumns:_*)
+      .start(hiveDatabase + "." + hiveTable)
+
     streamingQuery.awaitTermination(streamingInterval * 1000)
   }
 }
