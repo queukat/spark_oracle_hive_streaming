@@ -48,10 +48,11 @@ object OracleToHive {
       .option("driver", "oracle.jdbc.driver.OracleDriver")
       .load()
 
-   val castedDF = downloadedDF.select(downloadedDF.columns.map(col => {
-      val field = castedSchema.find(_.name == col).get
-      col.cast(field.dataType).as(field.name)
-    }): _*)
+   val castedDF = downloadedDF.selectExpr(downloadedDF.columns.map(col => {
+    val field = castedSchema.find(_.name == col).get
+    s"cast($col as ${field.dataType}) as ${field.name}"
+  }): _*)
+
 
     castedDF.write
       .format(hiveFormat)
@@ -60,15 +61,19 @@ object OracleToHive {
       .saveAsTable(s"$hiveDatabase.$hiveTable")
 
     //Change Data Capture of Oracle Table using Spark Streaming from JDBC
-    val streamingDF = spark.readStream
-      .format("jdbc")
-      .option("url", jdbcUrl)
-      .option("dbtable", jdbcTable)
-      .option("user", jdbcUser)
-      .option("password", jdbcPassword)
-      .option("driver", "oracle.jdbc.driver.OracleDriver")
-      .load()
-      .schema(castedSchema)
+  val streamingDF = spark.readStream
+  .format("jdbc")
+  .option("url", jdbcUrl)
+  .option("dbtable", jdbcTable)
+  .option("user", jdbcUser)
+  .option("password", jdbcPassword)
+  .option("driver", "oracle.jdbc.driver.OracleDriver")
+  .load()
+  .selectExpr(downloadedDF.columns.map(col => {
+    val field = castedSchema.find(_.name == col).get
+    s"cast($col as ${field.dataType}) as ${field.name}"
+  }): _*)
+
 
 
     val streamingQuery = streamingDF.writeStream
