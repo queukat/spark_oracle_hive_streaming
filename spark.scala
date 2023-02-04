@@ -48,7 +48,7 @@ object OracleToHive {
       .option("driver", "oracle.jdbc.driver.OracleDriver")
       .load()
 
-    val castedDF = downloadedDF.select(downloadedDF.columns.map(col => colcast(col, castedSchema.find(_.name == col).get.dataType)): _*)
+    val castedDF = downloadedDF.select(downloadedDF.columns.map(col => col(col).cast(col, castedSchema.find(_.name == col).get.dataType)): _*)
 
     castedDF.write
       .format(hiveFormat)
@@ -73,7 +73,7 @@ object OracleToHive {
       .option("checkpointLocation", hivePartitionLocation)
       .outputMode("append")
       .partitionBy(hivePartitionColumns:_*)
-      .start(hiveDatabase + "." + hiveTable)
+      .start(s"$hivePartitionLocation/${hivePartitionValues.mkString("/")}")
 
     streamingQuery.awaitTermination(streamingInterval * 1000)
   }
