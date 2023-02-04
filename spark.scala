@@ -65,7 +65,7 @@ object OracleToHive {
       .option("password", jdbcPassword)
       .option("driver", "oracle.jdbc.driver.OracleDriver")
       .load()
-      .(castedSchema)
+      .schema(castedSchema)
 
 
     val streamingQuery = streamingDF.writeStream
