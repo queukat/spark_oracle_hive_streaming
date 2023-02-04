@@ -39,15 +39,18 @@ object OracleToHive {
       }
     })
 
-    //Download Table in Hive with ORC Format
-    spark.read.format("jdbc")
+//Download Table in Hive with ORC Format
+    val downloadedDF = spark.read.format("jdbc")
       .option("url", jdbcUrl)
       .option("dbtable", jdbcTable)
       .option("user", jdbcUser)
       .option("password", jdbcPassword)
       .option("driver", "oracle.jdbc.driver.OracleDriver")
-      .load(castedSchema:_*)
-      .write
+      .load()
+
+    val castedDF = downloadedDF.select(downloadedDF.columns.map(col => colcast(col, castedSchema.find(_.name == col).get.dataType)): _*)
+
+    castedDF.write
       .format(hiveFormat)
       .mode("overwrite")
       .partitionBy(hivePartitionColumns:_*)
@@ -61,7 +64,8 @@ object OracleToHive {
       .option("user", jdbcUser)
       .option("password", jdbcPassword)
       .option("driver", "oracle.jdbc.driver.OracleDriver")
-      .load(castedSchema:_*)
+      .load()
+      .(castedSchema)
 
 
     val streamingQuery = streamingDF.writeStream
