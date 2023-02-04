@@ -2,8 +2,8 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
-      <module fileurl="file://$PROJECT_DIR$/.idea/modules/spark_oracle_hive_streaming_7618.iml" filepath="$PROJECT_DIR$/.idea/modules/spark_oracle_hive_streaming_7618.iml" />
-      <module fileurl="file://$PROJECT_DIR$/.idea/modules/spark_oracle_hive_streaming_7618-build.iml" filepath="$PROJECT_DIR$/.idea/modules/spark_oracle_hive_streaming_7618-build.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/OracleToHiveMigrator.iml" filepath="$PROJECT_DIR$/.idea/modules/OracleToHiveMigrator.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/OracleToHiveMigrator-build.iml" filepath="$PROJECT_DIR$/.idea/modules/OracleToHiveMigrator-build.iml" />
     </modules>
   </component>
 </project>
