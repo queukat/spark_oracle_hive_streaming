@@ -3,6 +3,7 @@ import org.apache.spark.sql.types._
 import org.apache.spark.sql.functions._
 import scala.collection.JavaConversions._
 import scala.language.implicitConversions
+import org.apache.spark.sql.Encoders
 
 
 object NewSpark {
@@ -36,8 +37,9 @@ object NewSpark {
       .load()
 
     val queryColumns = oracleSchema.select("COLUMN_NAME")
+    implicit val customEncoder = Encoders.tuple[String, String, String, String](StringType, StringType, StringType, StringType)
 
-    val castedSchema = oracleSchema.select("COLUMN_NAME", "DATA_TYPE", "DATA_PRECISION", "DATA_SCALE").as[(String, String, String, String)].map { case (columnName, dataType, dataPrecision, dataScale) =>
+    val castedSchema = oracleSchema.select("COLUMN_NAME", "DATA_TYPE", "DATA_PRECISION", "DATA_SCALE").as[(String, String, String, String)](customEncoder).map { case (columnName, dataType, dataPrecision, dataScale) =>
       var hiveDataType: DataType = dataType match {
         case "VARCHAR2" => StringType
         case "DATE" => TimestampType
