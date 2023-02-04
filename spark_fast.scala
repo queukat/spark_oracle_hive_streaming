@@ -1,7 +1,7 @@
 import org.apache.spark.sql.{DataFrame, Dataset, Encoders, SparkSession, Row}
 import org.apache.spark.sql.types._
 import org.apache.spark.sql.functions._
-import spark.implicits._
+
 import scala.collection.JavaConversions._
 import scala.language.implicitConversions
 
@@ -22,7 +22,7 @@ object NewSpark {
       .enableHiveSupport()
       .getOrCreate()
 
-
+    import spark.implicits._
 
     val jdbcOptions = Map(
       "url" -> url,
