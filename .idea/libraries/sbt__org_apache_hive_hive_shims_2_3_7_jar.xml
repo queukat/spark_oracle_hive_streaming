@@ -1,0 +1,11 @@
+<component name="libraryTable">
+  <library name="sbt: org.apache.hive:hive-shims:2.3.7:jar">
+    <CLASSES>
+      <root url="jar://$USER_HOME$/AppData/Local/Coursier/cache/v1/https/nexus-repo.dmp.vimpelcom.ru/repository/maven_all_/org/apache/hive/hive-shims/2.3.7/hive-shims-2.3.7.jar!/" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES>
+      <root url="jar://$USER_HOME$/AppData/Local/Coursier/cache/v1/https/nexus-repo.dmp.vimpelcom.ru/repository/maven_all_/org/apache/hive/hive-shims/2.3.7/hive-shims-2.3.7-sources.jar!/" />
+    </SOURCES>
+  </library>
+</component>
