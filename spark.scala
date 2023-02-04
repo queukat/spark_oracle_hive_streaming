@@ -48,7 +48,10 @@ object OracleToHive {
       .option("driver", "oracle.jdbc.driver.OracleDriver")
       .load()
 
-    val castedDF = downloadedDF.select(downloadedDF.columns.map(col => col(col).cast(col, castedSchema.find(_.name == col).get.dataType)): _*)
+   val castedDF = downloadedDF.select(downloadedDF.columns.map(col => {
+      val field = castedSchema.find(_.name == col).get
+      col.cast(field.dataType).as(field.name)
+    }): _*)
 
     castedDF.write
       .format(hiveFormat)
