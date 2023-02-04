@@ -1,9 +1,9 @@
-import org.apache.spark.sql.{SparkSession, DataFrame}
+import org.apache.spark.sql.{DataFrame, Dataset, Encoders, SparkSession, Row}
 import org.apache.spark.sql.types._
 import org.apache.spark.sql.functions._
+import spark.implicits._
 import scala.collection.JavaConversions._
 import scala.language.implicitConversions
-import org.apache.spark.sql.Encoders
 
 
 object NewSpark {
@@ -21,7 +21,8 @@ object NewSpark {
       .appName("OracleToHiveMigrator")
       .enableHiveSupport()
       .getOrCreate()
-    import spark.implicits._
+
+
 
     val jdbcOptions = Map(
       "url" -> url,
@@ -40,7 +41,10 @@ object NewSpark {
     
     implicit val customEncoder = Encoders.tuple[String, String, String, String](Encoders.STRING, Encoders.STRING, Encoders.STRING, Encoders.STRING)
 
-    val castedSchema = oracleSchema.select("COLUMN_NAME", "DATA_TYPE", "DATA_PRECISION", "DATA_SCALE").as[(String, String, String, String)](customEncoder).map { case (columnName, dataType, dataPrecision, dataScale) =>
+    val castedSchema = oracleSchema
+      .select("COLUMN_NAME", "DATA_TYPE", "DATA_PRECISION", "DATA_SCALE")
+      .as[(String, String, String, String)](customEncoder)
+      .map { case (columnName, dataType, dataPrecision, dataScale) =>
       var hiveDataType: DataType = dataType match {
         case "VARCHAR2" => StringType
         case "DATE" => TimestampType
@@ -89,9 +93,8 @@ object NewSpark {
         val end_block_id = row.getAs[Int]("end_block_id")
         val query = s"SELECT /*+ NO_INDEX(t) */ ${queryColumns} FROM ${owner}.${tableName} WHERE ((rowid >= dbms_rowid.rowid_create(1, $data_object_id, $relative_fno, $start_block_id, 0) AND rowid <= dbms_rowid.rowid_create(1, $data_object_id, $relative_fno, $end_block_id, 32767)))"
         spark.sql(query)
-      })
+      }).toDS().reduce((df1, df2) => df1.union(df2))
 
-    val queryDF = queryDFs.reduce((df1, df2) => df1.union(df2))
 
 
     queryDF.write.mode("append").insertInto(hivetable)
