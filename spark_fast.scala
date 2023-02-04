@@ -38,7 +38,7 @@ object NewSpark {
       .load()
 
     val queryColumns = oracleSchema.select("COLUMN_NAME")
-
+    
     implicit val customEncoder = Encoders.tuple[String, String, String, String](Encoders.STRING, Encoders.STRING, Encoders.STRING, Encoders.STRING)
 
     val castedSchema = oracleSchema
