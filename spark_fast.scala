@@ -37,7 +37,8 @@ object NewSpark {
       .load()
 
     val queryColumns = oracleSchema.select("COLUMN_NAME")
-    implicit val customEncoder = Encoders.tuple[String, String, String, String](StringType, StringType, StringType, StringType)
+    
+    implicit val customEncoder = Encoders.tuple[String, String, String, String](Encoders.STRING, Encoders.STRING, Encoders.STRING, Encoders.STRING)
 
     val castedSchema = oracleSchema.select("COLUMN_NAME", "DATA_TYPE", "DATA_PRECISION", "DATA_SCALE").as[(String, String, String, String)](customEncoder).map { case (columnName, dataType, dataPrecision, dataScale) =>
       var hiveDataType: DataType = dataType match {
