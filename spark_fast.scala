@@ -37,11 +37,7 @@ object NewSpark {
 
     val queryColumns = oracleSchema.select("COLUMN_NAME")
 
-    val castedSchema = oracleSchema.select("COLUMN_NAME", "DATA_TYPE", "DATA_PRECISION", "DATA_SCALE").map { row =>
-      val columnName = row.getAs[String]("COLUMN_NAME")
-      val dataType = row.getAs[String]("DATA_TYPE")
-      val dataPrecision = row.getAs[String]("DATA_PRECISION")
-      val dataScale = row.getAs[String]("DATA_SCALE")
+    val castedSchema = oracleSchema.select("COLUMN_NAME", "DATA_TYPE", "DATA_PRECISION", "DATA_SCALE").as[(String, String, String, String)].map { case (columnName, dataType, dataPrecision, dataScale) =>
       var hiveDataType: DataType = dataType match {
         case "VARCHAR2" => StringType
         case "DATE" => TimestampType
@@ -72,7 +68,7 @@ object NewSpark {
       StructField(columnName, hiveDataType, nullable = true)
     }
 
-    val createTableSQL = s"CREATE TABLE $hivetable ( ${castedSchema.map(field => s"${field.name} ${field.dataType.typeName}").mkString(", ")} )"
+    val createTableSQL = s"CREATE TABLE $hivetable ( ${castedSchema.map(field => s"${field.name} ${field.dataType.typeName}").collect().toSeq.mkString(", ")} )"
     spark.sql(createTableSQL)
 
     val fileIds = spark.read
