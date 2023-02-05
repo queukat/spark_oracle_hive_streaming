@@ -1,7 +1,7 @@
 import org.apache.spark.sql.{DataFrame, Dataset, Encoders, SparkSession, Row}
 import org.apache.spark.sql.types._
 import org.apache.spark.sql.functions._
-
+import org.apache.spark.sql.catalyst.encoders.ExpressionEncoder
 import scala.collection.JavaConversions._
 import scala.language.implicitConversions
 
@@ -95,8 +95,6 @@ object NewSpark {
         spark.sql(query)
       }).toDS().reduce((df1, df2) => df1.union(df2))
 
-
-
-    queryDF.write.mode("append").insertInto(hivetable)
+    queryDFs.write.mode("append").insertInto(hivetable)
   }
 }
