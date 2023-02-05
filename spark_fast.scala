@@ -2,6 +2,7 @@ import org.apache.spark.sql.types._
 import org.apache.spark.sql.{DataFrame, Encoder, Encoders, SparkSession}
 import org.apache.spark.sql.types.StructField
 import scala.language.implicitConversions
+import org.apache.spark.sql.functions.col
 
 
 object NewSpark {
