@@ -1,7 +1,6 @@
-import org.apache.spark.sql.{DataFrame, Dataset, Encoder, Encoders, Row, SparkSession}
 import org.apache.spark.sql.types._
-import org.apache.spark.sql.functions._
-import org.apache.spark.sql.catalyst.encoders.ExpressionEncoder
+import org.apache.spark.sql.{DataFrame, Encoder, Encoders, SparkSession}
+
 import scala.language.implicitConversions
 
 
@@ -35,42 +34,43 @@ object NewSpark {
       .load()
 
     val queryColumns = oracleSchema.select("COLUMN_NAME")
-    
+
     implicit val customEncoder: Encoder[(String, String, String, String)] = Encoders.tuple[String, String, String, String](Encoders.STRING, Encoders.STRING, Encoders.STRING, Encoders.STRING)
+
 
     val castedSchema = oracleSchema
       .select("COLUMN_NAME", "DATA_TYPE", "DATA_PRECISION", "DATA_SCALE")
       .as[(String, String, String, String)](customEncoder)
       .map { case (columnName, dataType, dataPrecision, dataScale) =>
-      var hiveDataType: DataType = dataType match {
-        case "VARCHAR2" => StringType
-        case "DATE" => TimestampType
-        case "NUMBER" =>
-          if (dataPrecision == null || dataScale == null) {
-            val maxLeftOfDecimal = spark.read.format("jdbc")
-              .options(Map("url" -> s"$url",
-                "dbtable" -> s"(select max(abs(trunc($columnName,0))) from $owner.$tableName)",
-                "user" -> s"$oracleUser",
-                "password" -> s"$oraclePassword")).load().first().length
-            val maxRightOfDecimal = spark.read.format("jdbc")
-              .options(Map("url" -> s"$url",
-                "dbtable" -> s"(select max(mod($columnName, 1)) from $owner.$tableName)",
-                "user" -> s"$oracleUser",
-                "password" -> s"$oraclePassword")).load().first().toString.substring(3).length
-            if (maxLeftOfDecimal + maxRightOfDecimal > 38) {
-              StringType
+        var hiveDataType: DataType = dataType match {
+          case "VARCHAR2" => StringType
+          case "DATE" => TimestampType
+          case "NUMBER" =>
+            if (dataPrecision == null || dataScale == null) {
+              val maxLeftOfDecimal = spark.read.format("jdbc")
+                .options(Map("url" -> s"$url",
+                  "dbtable" -> s"(select max(abs(trunc($columnName,0))) from $owner.$tableName)",
+                  "user" -> s"$oracleUser",
+                  "password" -> s"$oraclePassword")).load().first().length
+              val maxRightOfDecimal = spark.read.format("jdbc")
+                .options(Map("url" -> s"$url",
+                  "dbtable" -> s"(select max(mod($columnName, 1)) from $owner.$tableName)",
+                  "user" -> s"$oracleUser",
+                  "password" -> s"$oraclePassword")).load().first().toString.substring(3).length
+              if (maxLeftOfDecimal + maxRightOfDecimal > 38) {
+                StringType
+              }
+              else {
+                DecimalType(maxLeftOfDecimal, maxRightOfDecimal)
+              }
             }
             else {
-              DecimalType(maxLeftOfDecimal, maxRightOfDecimal)
+              DecimalType(dataPrecision.toInt, dataScale.toInt)
             }
-          }
-          else {
-            DecimalType(dataPrecision.toInt, dataScale.toInt)
-          }
-      }
+        }
 
-      StructField(columnName, hiveDataType, nullable = true)
-    }
+        StructField(columnName, hiveDataType, nullable = true)
+      }
 
     val createTableSQL = s"CREATE TABLE $hivetable ( ${castedSchema.map(field => s"${field.name} ${field.dataType.typeName}").collect().toSeq.mkString(", ")} )"
     spark.sql(createTableSQL)
@@ -92,7 +92,7 @@ object NewSpark {
         val end_block_id = row.getAs[Int]("end_block_id")
         val query = s"SELECT /*+ NO_INDEX(t) */ ${queryColumns} FROM ${owner}.${tableName} WHERE ((rowid >= dbms_rowid.rowid_create(1, $data_object_id, $relative_fno, $start_block_id, 0) AND rowid <= dbms_rowid.rowid_create(1, $data_object_id, $relative_fno, $end_block_id, 32767)))"
         spark.sql(query)
-      }).toDS().reduce((df1, df2) => df1.union(df2))
+      }).reduce((df1, df2) => df1.union(df2))
 
     queryDFs.write.mode("append").insertInto(hivetable)
   }
