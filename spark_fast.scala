@@ -1,8 +1,7 @@
-import org.apache.spark.sql.{DataFrame, Dataset, Encoders, SparkSession, Row}
+import org.apache.spark.sql.{DataFrame, Dataset, Encoder, Encoders, Row, SparkSession}
 import org.apache.spark.sql.types._
 import org.apache.spark.sql.functions._
 import org.apache.spark.sql.catalyst.encoders.ExpressionEncoder
-import scala.collection.JavaConversions._
 import scala.language.implicitConversions
 
 
@@ -22,8 +21,6 @@ object NewSpark {
       .enableHiveSupport()
       .getOrCreate()
 
-    import spark.implicits._
-
     val jdbcOptions = Map(
       "url" -> url,
       "user" -> oracleUser,
@@ -39,7 +36,7 @@ object NewSpark {
 
     val queryColumns = oracleSchema.select("COLUMN_NAME")
     
-    implicit val customEncoder = Encoders.tuple[String, String, String, String](Encoders.STRING, Encoders.STRING, Encoders.STRING, Encoders.STRING)
+    implicit val customEncoder: Encoder[(String, String, String, String)] = Encoders.tuple[String, String, String, String](Encoders.STRING, Encoders.STRING, Encoders.STRING, Encoders.STRING)
 
     val castedSchema = oracleSchema
       .select("COLUMN_NAME", "DATA_TYPE", "DATA_PRECISION", "DATA_SCALE")
@@ -83,6 +80,8 @@ object NewSpark {
       .options(jdbcOptions)
       .option("dbtable", s"(SELECT data_object_id,file_id, relative_fno, subobject_name, MIN(start_block_id) start_block_id, MAX(end_block_id)   end_block_id, SUM(blocks)  blocks   FROM (SELECT o.data_object_id, o.subobject_name, e.file_id, e.relative_fno, e.block_id  start_block_id, e.block_id + e.blocks - 1 end_block_id, e.blocks   FROM dba_extents e, dba_objects o, dba_tab_subpartitions tsp   WHERE o.owner = $owner AND o.object_name = $tableName AND e.owner = $owner AND e.segment_name = $tableName AND o.owner = e.owner AND o.object_name = e.segment_name AND (o.subobject_name = e.partition_name   OR (o.subobject_name IS NULL   AND e.partition_name IS NULL)) AND o.owner = tsp.table_owner(+) AND o.object_name = tsp.table_name(+) AND o.subobject_name = tsp.subpartition_name(+)) GROUP BY data_object_id, file_id, relative_fno, subobject_name ORDER BY data_object_id, file_id, relative_fno, subobject_name;)")
       .load()
+
+    implicit val dataFrameEncoder: Encoder[DataFrame] = org.apache.spark.sql.Encoders.kryo[DataFrame]
 
     val queryDFs = fileIds.select("relative_fno", "data_object_id", "start_block_id", "end_block_id")
       .repartition(10)
