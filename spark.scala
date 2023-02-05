@@ -1,7 +1,6 @@
 import org.apache.spark.sql.SparkSession
 import org.apache.spark.sql.types._
 import org.apache.spark.sql.functions._
-import org.apache.spark._
 import java.sql.Timestamp
 
 object OracleToHive {
@@ -47,14 +46,15 @@ object OracleToHive {
       .option("password", jdbcPassword)
       .option("driver", "oracle.jdbc.driver.OracleDriver")
       .load()
+      .selectExpr {
+        downloadedDF.columns.map(col => {
+          val field = castedSchema.find(_.name == col).get
+          s"cast($col as ${field.dataType}) as ${field.name}"
+        }): _*
+      }
 
-   val castedDF = downloadedDF.selectExpr(downloadedDF.columns.map(col => {
-    val field = castedSchema.find(_.name == col).get
-    s"cast($col as ${field.dataType}) as ${field.name}"
-  }): _*)
 
-
-    castedDF.write
+    downloadedDF.write
       .format(hiveFormat)
       .mode("overwrite")
       .partitionBy(hivePartitionColumns:_*)
@@ -69,10 +69,10 @@ object OracleToHive {
   .option("password", jdbcPassword)
   .option("driver", "oracle.jdbc.driver.OracleDriver")
   .load()
-  .selectExpr(downloadedDF.columns.map(col => {
-    val field = castedSchema.find(_.name == col).get
-    s"cast($col as ${field.dataType}) as ${field.name}"
-  }): _*)
+    .selectExpr(downloadedDF.columns.map(col => {
+      val field = castedSchema.find(_.name == col).get
+      s"cast($col as ${field.dataType}) as ${field.name}"
+    }): _*)
 
 
 
