@@ -1,6 +1,6 @@
 import org.apache.spark.sql.types._
 import org.apache.spark.sql.{DataFrame, Encoder, Encoders, SparkSession}
-
+import org.apache.spark.sql.types.StructField
 import scala.language.implicitConversions
 
 
@@ -35,14 +35,25 @@ object NewSpark {
 
     val queryColumns = oracleSchema.select("COLUMN_NAME")
 
-    implicit val customEncoder: Encoder[(String, String, String, String)] = Encoders.tuple[String, String, String, String](Encoders.STRING, Encoders.STRING, Encoders.STRING, Encoders.STRING)
-
-
     val castedSchema = oracleSchema
-      .select("COLUMN_NAME", "DATA_TYPE", "DATA_PRECISION", "DATA_SCALE")
+      .select(
+        col("COLUMN_NAME").alias("columnName"),
+        col("DATA_TYPE").alias("dataType"),
+        col("DATA_PRECISION").alias("dataPrecision"),
+        col("DATA_SCALE").alias("dataScale")
+      )
+
+    val customEncoder = org.apache.spark.sql.Encoders.tuple(
+      org.apache.spark.sql.Encoders.STRING,
+      org.apache.spark.sql.Encoders.STRING,
+      org.apache.spark.sql.Encoders.STRING,
+      org.apache.spark.sql.Encoders.STRING
+    )
+
+    val result  = castedSchema
       .as[(String, String, String, String)](customEncoder)
       .map { case (columnName, dataType, dataPrecision, dataScale) =>
-        var hiveDataType: DataType = dataType match {
+        val hiveDataType = dataType match {
           case "VARCHAR2" => StringType
           case "DATE" => TimestampType
           case "NUMBER" =>
