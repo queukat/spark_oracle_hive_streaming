@@ -1,7 +1,5 @@
 import org.apache.spark.sql.SparkSession
 import org.apache.spark.sql.types._
-import org.apache.spark.sql.functions._
-import java.sql.Timestamp
 
 object OracleToHive {
   def main(args: Array[String]): Unit = {
@@ -38,7 +36,7 @@ object OracleToHive {
       }
     })
 
-//Download Table in Hive with ORC Format
+    //Download Table in Hive with ORC Format
     val downloadedDF = spark.read.format("jdbc")
       .option("url", jdbcUrl)
       .option("dbtable", jdbcTable)
@@ -46,41 +44,41 @@ object OracleToHive {
       .option("password", jdbcPassword)
       .option("driver", "oracle.jdbc.driver.OracleDriver")
       .load()
-      .selectExpr {
-        downloadedDF.columns.map(col => {
+
+
+    val castedDF = downloadedDF.selectExpr(downloadedDF.columns.map(col => {
           val field = castedSchema.find(_.name == col).get
           s"cast($col as ${field.dataType}) as ${field.name}"
-        }): _*
-      }
+        }): _*)
+
 
 
     downloadedDF.write
       .format(hiveFormat)
       .mode("overwrite")
-      .partitionBy(hivePartitionColumns:_*)
+      .partitionBy(hivePartitionColumns: _*)
       .saveAsTable(s"$hiveDatabase.$hiveTable")
 
     //Change Data Capture of Oracle Table using Spark Streaming from JDBC
-  val streamingDF = spark.readStream
-  .format("jdbc")
-  .option("url", jdbcUrl)
-  .option("dbtable", jdbcTable)
-  .option("user", jdbcUser)
-  .option("password", jdbcPassword)
-  .option("driver", "oracle.jdbc.driver.OracleDriver")
-  .load()
-    .selectExpr(downloadedDF.columns.map(col => {
-      val field = castedSchema.find(_.name == col).get
-      s"cast($col as ${field.dataType}) as ${field.name}"
-    }): _*)
-
+    val streamingDF = spark.readStream
+      .format("jdbc")
+      .option("url", jdbcUrl)
+      .option("dbtable", jdbcTable)
+      .option("user", jdbcUser)
+      .option("password", jdbcPassword)
+      .option("driver", "oracle.jdbc.driver.OracleDriver")
+      .load()
+      .selectExpr(downloadedDF.columns.map(col => {
+        val field = castedSchema.find(_.name == col).get
+        s"cast($col as ${field.dataType}) as ${field.name}"
+      }): _*)
 
 
     val streamingQuery = streamingDF.writeStream
       .format(hiveFormat)
       .option("checkpointLocation", hivePartitionLocation)
       .outputMode("append")
-      .partitionBy(hivePartitionColumns:_*)
+      .partitionBy(hivePartitionColumns: _*)
       .start(s"$hivePartitionLocation/${hivePartitionValues.mkString("/")}")
 
     streamingQuery.awaitTermination(streamingInterval * 1000)
