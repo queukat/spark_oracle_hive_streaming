@@ -17,4 +17,3 @@ resolvers ++= Seq(
   "Maven Central" at "https://repo1.maven.org/maven2/"
 )
 
-assemblyJarName in assembly := s"${name.value}-${version.value}.jar"
