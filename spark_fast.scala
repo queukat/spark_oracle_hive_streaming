@@ -22,6 +22,8 @@ object NewSpark {
       .enableHiveSupport()
       .getOrCreate()
 
+    import spark.implicits._
+
     val jdbcOptions = Map(
       "url" -> url,
       "user" -> oracleUser,
