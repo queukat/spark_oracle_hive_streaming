@@ -1,8 +1,8 @@
-#importing necessary libraries
+# importing necessary libraries
 from pyspark.sql import SparkSession
-from pyspark.sql.types import *
 from pyspark.sql.functions import *
 from pyspark.sql.streaming import DataStreamWriter
+from pyspark.sql.types import *
 
 #creating spark session
 spark = SparkSession.builder.appName("OracleToHive").getOrCreate()
