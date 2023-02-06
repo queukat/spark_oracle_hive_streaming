@@ -1,9 +1,10 @@
-import org.apache.spark.sql.types._
-import org.apache.spark.sql.{DataFrame, Encoder, Encoders, SparkSession}
-import org.apache.spark.sql.types.StructField
-import scala.language.implicitConversions
 import org.apache.spark.sql.functions.col
+import org.apache.spark.sql.types._
+import org.apache.spark.sql.{DataFrame, Encoder, SparkSession}
 
+import scala.language.implicitConversions
+
+case class ColumnInfo(columnName: String, dataType: String, dataPrecision: String, dataScale: String)
 
 object NewSpark {
 
@@ -51,7 +52,7 @@ object NewSpark {
       org.apache.spark.sql.Encoders.STRING
     )
 
-    val result  = castedSchema
+    val result = castedSchema
       .as[(String, String, String, String)](customEncoder)
       .map { case (columnName, dataType, dataPrecision, dataScale) =>
         val hiveDataType = dataType match {
@@ -84,7 +85,13 @@ object NewSpark {
         StructField(columnName, hiveDataType, nullable = true)
       }
 
-    val createTableSQL = s"CREATE TABLE $hivetable ( ${castedSchema.map(field => s"${field.name} ${field.dataType.typeName}").collect().toSeq.mkString(", ")} )"
+    val createTableSQL = s"CREATE TABLE $hivetable ( ${
+      castedSchema.map { row =>
+        val columnName = row.getAs[String]("COLUMN_NAME")
+        val dataType = row.getAs[String]("DATA_TYPE")
+        s"$columnName $dataType"
+      }.collect().toSeq.mkString(", ")
+    } )"
     spark.sql(createTableSQL)
 
     val fileIds = spark.read
