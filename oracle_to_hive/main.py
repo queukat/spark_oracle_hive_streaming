@@ -1,43 +1,80 @@
 # importing necessary libraries
-from pyspark.sql import SparkSession
+from pyspark.sql import SparkSession, types
 from pyspark.sql.functions import *
-from pyspark.sql.streaming import DataStreamWriter
 from pyspark.sql.types import *
 
-#creating spark session
-spark = SparkSession.builder.appName("OracleToHive").getOrCreate()
 
-#creating oracle connection
-oracle_url = "jdbc:oracle:thin:@localhost:1521:orcl"
-oracle_properties = dict(user="username", password="password", driver="oracle.jdbc.driver.OracleDriver")
+def main(args):
+    spark = SparkSession.builder().appName("OracleToHive").getOrCreate()
+    jdbcUrl = "jdbc:oracle:thin:@hostname:port/service_name"
+    jdbcTable = "oracle_table"
+    jdbcUser = "username"
+    jdbcPassword = "password"
+    hiveTable = "hive_table"
+    hiveDatabase = "hive_database"
+    hiveFormat = "orc"
+    hivePartitionColumns = ["column1", "column2"]
+    hivePartitionValues = ["value1", "value2"]
+    hivePartitionLocation = "hdfs:///hive/warehouse/hive_database.db/hive_table"
+    streamingInterval = 10  # seconds
 
-#creating hive connection
-hive_url = "jdbc:hive2://localhost:10000/default"
-hive_properties = dict(user="username", password="password", driver="org.apache.hive.jdbc.HiveDriver")
+    # Get Oracle Table Schema
+    oracleTableSchema = spark.read.format("jdbc") \
+        .option("url", jdbcUrl) \
+        .option("dbtable", jdbcTable) \
+        .option("user", jdbcUser) \
+        .option("password", jdbcPassword) \
+        .option("driver", "oracle.jdbc.driver.OracleDriver") \
+        .load() \
+        .schema
 
-#creating oracle table
-oracle_table = spark.read.jdbc(url=oracle_url, table="oracle_table", properties=oracle_properties)
+    # Cast Oracle Column Data Types
+    castedSchema = [StructField(field.name,
+                                StringType if field.dataType == types.StringType else
+                                DecimalType(38, 0) if field.dataType == types.IntegerType else
+                                TimestampType if field.dataType == types.DateType else
+                                field.dataType,
+                                field.nullable, field.metadata) for field in oracleTableSchema]
 
-#creating hive table
-hive_table = spark.read.jdbc(url=hive_url, table="hive_table", properties=hive_properties)
+    # Download Table in Hive with ORC Format
+    downloadedDF = spark.read.format("jdbc") \
+        .option("url", jdbcUrl) \
+        .option("dbtable", jdbcTable) \
+        .option("user", jdbcUser) \
+        .option("password", jdbcPassword) \
+        .option("driver", "oracle.jdbc.driver.OracleDriver") \
+        .load()
 
-#creating mapping for oracle data types
-oracle_data_types_map = dict(NUMBER="DECIMAL", VARCHAR2="STRING", DATE="TIMESTAMP")
+    castedDF = downloadedDF.selectExpr([f"cast({col} as {field.dataType}) as {field.name}"
+                                        for col, field in zip(downloadedDF.columns, castedSchema)])
 
-#creating schema for oracle table
-oracle_schema = StructType([StructField(c.name, oracle_data_types_map.get(c.dataType, c.dataType), True) for c in oracle_table.schema.fields])
+    downloadedDF.write \
+        .format(hiveFormat) \
+        .mode("overwrite") \
+        .partitionBy(*hivePartitionColumns) \
+        .saveAsTable(f"{hiveDatabase}.{hiveTable}")
 
-#downloading oracle table in hive with orc format
-oracle_table.write.format("orc").mode("overwrite").saveAsTable("hive_table")
+    # Change Data Capture of Oracle Table using Spark Streaming from JDBC
+    streamingDF = spark.readStream \
+        .format("jdbc") \
+        .option("url", jdbcUrl) \
+        .option("dbtable", jdbcTable) \
+        .option("user", jdbcUser) \
+        .option("password", jdbcPassword) \
+        .option("driver", "oracle.jdbc.driver.OracleDriver") \
+        .load() \
+        .selectExpr([f"cast({col} as {field.dataType}) as {field.name}"
+                     for col, field in zip(downloadedDF.columns, castedSchema)])
 
-#creating streaming query
-streaming_query = DataStreamWriter(oracle_table.writeStream.format("orc").option("checkpointLocation", "/tmp/checkpoint").start("/tmp/streaming"))
+    streamingQuery = streamingDF.writeStream \
+        .format(hiveFormat) \
+        .option("checkpointLocation", hivePartitionLocation) \
+        .outputMode("append") \
+        .partitionBy(*hivePartitionColumns) \
+        .start(f"{hivePartitionLocation}/{'/'.join(hivePartitionValues)}")
 
-#appending streaming data to hive table
-streaming_query.foreachBatch(lambda df, epoch_id: df.write.format("orc").mode("append").saveAsTable("hive_table"))
+    streamingQuery.awaitTermination(streamingInterval * 1000)
 
-#stopping streaming query
-streaming_query.stop()
 
-#stopping spark session
-spark.stop()
+if __name__ == "__main__":
+    main(sys.argv)
