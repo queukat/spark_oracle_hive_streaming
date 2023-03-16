@@ -42,7 +42,7 @@ object NewSpark {
     val castedSchema = oracleSchema
       .select(
         col("COLUMN_NAME").alias("columnName"),
-        col("DATA_TYPE").alias("dataType"),
+        col("DATA_TYPE").alias("data_type"),
         col("DATA_PRECISION").alias("dataPrecision"),
         col("DATA_SCALE").alias("dataScale")
       )
