@@ -69,7 +69,7 @@ object NewSpark {
                   "password" -> s"$oraclePassword")).load().first().length
               val maxRightOfDecimal = spark.read.format("jdbc")
                 .options(Map("url" -> s"$url",
-                  "dbtable" -> s"(select max(mod($columnName, 1)) from $owner.$tableName)",
+                  "dbtable" -> s"(select max(REGEXP_REPLACE(mod($columnName, 1), '(\d)\1{4,}', '\1')) from $owner.$tableName)",
                   "user" -> s"$oracleUser",
                   "password" -> s"$oraclePassword")).load().first().toString.substring(3).length
               if (maxLeftOfDecimal + maxRightOfDecimal > 38) {
