@@ -2,7 +2,7 @@ import org.apache.spark.sql.functions.col
 import org.apache.spark.sql.types._
 import org.apache.spark.sql.{DataFrame, SparkSession}
 
-case class ColumnInfo(columnName: String, dataType: String, dataPrecision: String, dataScale: String)
+case class ColumnInfo_1(columnName: String, dataType: String, dataPrecision: String, dataScale: String)
 
 object NewSpark_1 {
   def migrate(
