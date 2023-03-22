@@ -2,7 +2,7 @@ import org.apache.spark.sql.{DataFrame, SparkSession}
 import scala.concurrent.duration._
 import scala.concurrent.{Await, ExecutionContext, Future}
 
-object OracleToHive {
+object OracleToHive_1 {
   def main(args: Array[String]): Unit = {
     val spark = SparkSession.builder
       .appName("Oracle to Hive")
