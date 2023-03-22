@@ -4,7 +4,7 @@ import org.apache.spark.sql.{DataFrame, SparkSession}
 
 case class ColumnInfo(columnName: String, dataType: String, dataPrecision: String, dataScale: String)
 
-object NewSpark {
+object NewSpark_1 {
   def migrate(
                url: String,
                oracleUser: String,
