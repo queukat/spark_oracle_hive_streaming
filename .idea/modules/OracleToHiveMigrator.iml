@@ -1,17 +1,18 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<module external.linked.project.id="spark_oracle_hive_streaming [file:/C:/Users/YaRychenkov/spark_oracle_hive_streaming/]" external.linked.project.path="$MODULE_DIR$/../.." external.root.project.path="$MODULE_DIR$/../.." external.system.id="SBT" type="JAVA_MODULE" version="4">
+<module external.linked.project.id="spark_oracle_hive_streaming [file:/C:/Users/user/IdeaProjects/spark_oracle_hive_streaming/]" external.linked.project.path="$MODULE_DIR$/../.." external.root.project.path="$MODULE_DIR$/../.." external.system.id="SBT" type="JAVA_MODULE" version="4">
   <component name="FacetManager">
     <facet type="Python" name="Python">
-      <configuration sdkName="Python 3.9 (spark_oracle_hive_streaming)" />
+      <configuration sdkName="" />
     </facet>
   </component>
-  <component name="NewModuleRootManager" LANGUAGE_LEVEL="JDK_1_8">
+  <component name="NewModuleRootManager" LANGUAGE_LEVEL="JDK_17">
     <output url="file://$MODULE_DIR$/../../target/scala-2.12/classes" />
     <output-test url="file://$MODULE_DIR$/../../target/scala-2.12/test-classes" />
     <exclude-output />
     <content url="file://$MODULE_DIR$/../..">
+      <sourceFolder url="file://$MODULE_DIR$/../../src/main/scala" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/../../src/main/scala" isTestSource="false" />
       <excludeFolder url="file://$MODULE_DIR$/../../target" />
-      <excludeFolder url="file://$MODULE_DIR$/../../venv" />
     </content>
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />
@@ -39,6 +40,7 @@
     <orderEntry type="library" name="sbt: com.jolbox:bonecp:0.8.0.RELEASE:jar" level="project" />
     <orderEntry type="library" name="sbt: com.ning:compress-lzf:1.0.3:jar" level="project" />
     <orderEntry type="library" name="sbt: com.oracle.database.jdbc:ojdbc8:21.6.0.0.1:jar" level="project" />
+    <orderEntry type="library" name="sbt: com.sun.activation:jakarta.activation:1.2.1:jar" level="project" />
     <orderEntry type="library" name="sbt: com.sun.jersey:jersey-core:1.9:jar" level="project" />
     <orderEntry type="library" name="sbt: com.sun.jersey:jersey-json:1.9:jar" level="project" />
     <orderEntry type="library" name="sbt: com.sun.jersey:jersey-server:1.9:jar" level="project" />
@@ -71,9 +73,11 @@
     <orderEntry type="library" name="sbt: io.dropwizard.metrics:metrics-jvm:4.1.1:jar" level="project" />
     <orderEntry type="library" name="sbt: io.netty:netty-all:4.1.47.Final:jar" level="project" />
     <orderEntry type="library" name="sbt: io.netty:netty:3.10.6.Final:jar" level="project" />
+    <orderEntry type="library" name="sbt: jakarta.activation:jakarta.activation-api:1.2.1:jar" level="project" />
     <orderEntry type="library" name="sbt: jakarta.annotation:jakarta.annotation-api:1.3.5:jar" level="project" />
     <orderEntry type="library" name="sbt: jakarta.validation:jakarta.validation-api:2.0.2:jar" level="project" />
     <orderEntry type="library" name="sbt: jakarta.ws.rs:jakarta.ws.rs-api:2.1.6:jar" level="project" />
+    <orderEntry type="library" name="sbt: jakarta.xml.bind:jakarta.xml.bind-api:2.3.2:jar" level="project" />
     <orderEntry type="library" name="sbt: javax.activation:activation:1.1.1:jar" level="project" />
     <orderEntry type="library" name="sbt: javax.inject:javax.inject:1:jar" level="project" />
     <orderEntry type="library" name="sbt: javax.jdo:jdo-api:3.0.1:jar" level="project" />
@@ -229,16 +233,19 @@
         <CLASSES />
         <JAVADOC>
           <root url="jar://$USER_HOME$/AppData/Local/Coursier/cache/v1/https/nexus-repo.dmp.vimpelcom.ru/repository/maven_all_/org/apache/avro/avro-mapred/1.8.2/avro-mapred-1.8.2-javadoc.jar!/" />
+          <root url="jar://$USER_HOME$/AppData/Local/Coursier/cache/v1/https/repo1.maven.org/maven2/org/apache/avro/avro-mapred/1.8.2/avro-mapred-1.8.2-javadoc.jar!/" />
         </JAVADOC>
         <SOURCES>
           <root url="jar://$USER_HOME$/AppData/Local/Coursier/cache/v1/https/nexus-repo.dmp.vimpelcom.ru/repository/maven_all_/org/apache/avro/avro-mapred/1.8.2/avro-mapred-1.8.2-sources.jar!/" />
           <root url="jar://$USER_HOME$/AppData/Local/Coursier/cache/v1/https/nexus-repo.dmp.vimpelcom.ru/repository/maven_all_/org/apache/hive/hive-exec/2.3.7/hive-exec-2.3.7-sources.jar!/" />
+          <root url="jar://$USER_HOME$/AppData/Local/Coursier/cache/v1/https/repo1.maven.org/maven2/org/apache/avro/avro-mapred/1.8.2/avro-mapred-1.8.2-sources.jar!/" />
+          <root url="jar://$USER_HOME$/AppData/Local/Coursier/cache/v1/https/repo1.maven.org/maven2/org/apache/hive/hive-exec/2.3.7/hive-exec-2.3.7-sources.jar!/" />
         </SOURCES>
       </library>
     </orderEntry>
     <orderEntry type="library" name="sbt: xerces:xercesImpl:2.9.1:jar" level="project" />
     <orderEntry type="library" name="sbt: xml-apis:xml-apis:1.3.04:jar" level="project" />
     <orderEntry type="library" name="sbt: xmlenc:xmlenc:0.52:jar" level="project" />
-    <orderEntry type="library" name="Python 3.9 (spark_oracle_hive_streaming) interpreter library" level="application" />
+    <orderEntry type="library" name="scala-sdk-2.13.10" level="application" />
   </component>
 </module>

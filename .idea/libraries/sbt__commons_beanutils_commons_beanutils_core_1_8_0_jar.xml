@@ -1,7 +1,7 @@
 <component name="libraryTable">
-  <library name="sbt: commons-beanutils:commons-beanutils-core:1.8.0:jar">
+  <library name="sbt: commons-beanutils:commons-beanutils-core:1.8.0:jar" external-system-id="SBT">
     <CLASSES>
-      <root url="jar://$USER_HOME$/AppData/Local/Coursier/cache/v1/https/nexus-repo.dmp.vimpelcom.ru/repository/maven_all_/commons-beanutils/commons-beanutils-core/1.8.0/commons-beanutils-core-1.8.0.jar!/" />
+      <root url="jar://$USER_HOME$/AppData/Local/Coursier/cache/v1/https/repo1.maven.org/maven2/commons-beanutils/commons-beanutils-core/1.8.0/commons-beanutils-core-1.8.0.jar!/" />
     </CLASSES>
     <JAVADOC />
     <SOURCES />
