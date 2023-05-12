@@ -1,13 +1,13 @@
 <component name="libraryTable">
-  <library name="sbt: io.netty:netty:3.10.6.Final:jar">
+  <library name="sbt: io.netty:netty:3.10.6.Final:jar" external-system-id="SBT">
     <CLASSES>
-      <root url="jar://$USER_HOME$/AppData/Local/Coursier/cache/v1/https/nexus-repo.dmp.vimpelcom.ru/repository/maven_all_/io/netty/netty/3.10.6.Final/netty-3.10.6.Final.jar!/" />
+      <root url="jar://$USER_HOME$/AppData/Local/Coursier/cache/v1/https/repo1.maven.org/maven2/io/netty/netty/3.10.6.Final/netty-3.10.6.Final.jar!/" />
     </CLASSES>
     <JAVADOC>
-      <root url="jar://$USER_HOME$/AppData/Local/Coursier/cache/v1/https/nexus-repo.dmp.vimpelcom.ru/repository/maven_all_/io/netty/netty/3.10.6.Final/netty-3.10.6.Final-javadoc.jar!/" />
+      <root url="jar://$USER_HOME$/AppData/Local/Coursier/cache/v1/https/repo1.maven.org/maven2/io/netty/netty/3.10.6.Final/netty-3.10.6.Final-javadoc.jar!/" />
     </JAVADOC>
     <SOURCES>
-      <root url="jar://$USER_HOME$/AppData/Local/Coursier/cache/v1/https/nexus-repo.dmp.vimpelcom.ru/repository/maven_all_/io/netty/netty/3.10.6.Final/netty-3.10.6.Final-sources.jar!/" />
+      <root url="jar://$USER_HOME$/AppData/Local/Coursier/cache/v1/https/repo1.maven.org/maven2/io/netty/netty/3.10.6.Final/netty-3.10.6.Final-sources.jar!/" />
     </SOURCES>
   </library>
 </component>
