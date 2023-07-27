@@ -1,15 +1,24 @@
 
+enablePlugins(GhpagesPlugin)
+git.remoteRepo := "git@github.com:queukat/spark_oracle_hive_streaming.git"
+
 name := "OracleToHiveMigrator"
 
-version := "1.0"
+version := "2.0"
 
-scalaVersion := "2.12.11"
+scalaVersion := "2.12.17"
+
+val sparkVersion = "3.4.0"
+
 
 libraryDependencies ++= Seq(
-  "org.apache.spark" %% "spark-core" % "3.0.0",
-  "org.apache.spark" %% "spark-sql" % "3.0.0",
-  "org.apache.spark" %% "spark-hive" % "3.0.0",
-  "com.oracle.database.jdbc" % "ojdbc8" % "21.6.0.0.1"
+  "org.apache.spark" %% "spark-core" % sparkVersion % "provided",
+  "org.apache.spark" %% "spark-sql" % sparkVersion % "provided",
+  "org.apache.spark" %% "spark-hive" % sparkVersion % "provided",
+  "com.oracle.database.jdbc" % "ojdbc8" % "21.9.0.0",
+  "com.oracle.database.jdbc" % "ucp" % "21.9.0.0",
+  "com.typesafe.scala-logging" %% "scala-logging" % "3.9.5",
+  "org.scalatest" %% "scalatest" % "3.2.15" % Test
 )
 
 developers := List(
@@ -23,7 +32,11 @@ developers := List(
 
 resolvers ++= Seq(
   "Spark Packages Repo" at "https://dl.bintray.com/spark-packages/maven/",
-  "Maven Central" at "https://repo1.maven.org/maven2/"
+  "Maven Central" at "https://repo1.maven.org/maven2/",
+  "Sonatype Nexus" at "https://nexus.example.com/repository/maven-public/",
+  "JFrog Artifactory" at "https://artifactory.example.com/artifactory/public-repo/",
+  "MavenRepository" at  "https://mvnrepository.com/"
+
 )
 
 publishMavenStyle := true
