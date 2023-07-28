@@ -213,11 +213,10 @@ class DbReader(
 
   def handlePendingQueries(): Unit = {
     while (true) {
-      val query = pendingQueries.take() // Блокирует, пока запрос не станет доступен
+      val query = pendingQueries.take()
       downloadFromJDBC(query)
     }
   }
 
-  // Запуск обработчика в отдельном потоке
   new Thread(() => handlePendingQueries()).start()
 }
