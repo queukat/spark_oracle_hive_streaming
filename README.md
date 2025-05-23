@@ -120,3 +120,13 @@ This application currently supports only Oracle data types that can be converted
 
 # Contributing
 If you'd like to contribute, please fork the repository and make changes as you'd like. Pull requests are warmly welcome.
+
+# Publishing to Maven
+Если необходимо разместить библиотеку в Maven Central, в репозитории есть workflow `.github/workflows/publish.yml`. При создании релиза он запускает `sbt +publishSigned` и отправляет артефакт в Sonatype.
+
+Перед использованием workflow в настройках репозитория нужно добавить секреты:
+- `SONATYPE_USERNAME` и `SONATYPE_PASSWORD` – логин и пароль от Sonatype;
+- `GPG_PRIVATE_KEY` и `GPG_PASSPHRASE` – ключ и пароль для подписи артефактов.
+
+После добавления секретов достаточно создать релиз на GitHub, и публикация произойдёт автоматически. Локально вы можете выполнить ту же команду `sbt +publishSigned`.
+

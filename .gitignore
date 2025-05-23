@@ -1,0 +1,8 @@
+# sbt
+target/
+project/target/
+project/project/
+.cache/
+.idea/
+.DS_Store
+*.log
