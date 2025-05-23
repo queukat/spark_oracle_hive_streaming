@@ -1,6 +1,7 @@
 package queukat.spark_universal
 
 import org.apache.spark.sql.types.StructType
+import org.apache.spark.sql.DataFrame
 import org.slf4j.LoggerFactory
 
 import scala.concurrent.{ExecutionContext, ExecutionContextExecutor}
@@ -17,6 +18,78 @@ import scala.util.{Failure, Success}
 object NewSpark {
 
   private val logger = LoggerFactory.getLogger(NewSpark.getClass)
+
+  private def createComponents(url: String,
+                               oracleUser: String,
+                               oraclePassword: String,
+                               owner: String,
+                               tableName: String,
+                               numPartitions: Int,
+                               fetchSize: Int,
+                               typeCheck: String): (DbReader, SchemaConverter, HiveManager) = {
+    logger.info("Getting Spark session.")
+    val spark = SparkSessionFactory.getSparkSession()
+
+    logger.info("Initializing DBReader.")
+    val dbReader = new DbReader(spark, url, oracleUser, oraclePassword, numPartitions, fetchSize)
+
+    logger.info("Initializing SchemaConverter.")
+    val schemaConverter = new SchemaConverter(spark, owner, tableName, typeCheck, dbReader)
+
+    logger.info("Initializing HiveManager.")
+    val hiveManager = new HiveManager(spark)
+
+    (dbReader, schemaConverter, hiveManager)
+  }
+
+  private def fetchSchema(dbReader: DbReader, tableName: String, owner: String) = {
+    logger.info("Generating schema query.")
+    val schemaQuery = QueryGenerator.generateSchemaQuery(tableName, owner)
+    logger.info(s"Schema query: $schemaQuery")
+
+    logger.info("Reading schema from Oracle database.")
+    dbReader.readFromJDBC(schemaQuery)
+  }
+
+  private def prepareDataQueries(dbReader: DbReader, oracleSchema: org.apache.spark.sql.DataFrame, owner: String, tableName: String) = {
+    logger.info("Generating universal query.")
+    val universalQuery = QueryGenerator.generateUniversalQuery(owner, tableName)
+    logger.info(s"Universal query: $universalQuery")
+
+    logger.info("Getting partition info.")
+    val partitionInfo = dbReader.readFromJDBC(universalQuery)
+
+    logger.info("Getting query columns.")
+    val queryColumns = oracleSchema.select("COLUMN_NAME").rdd.map(r => r(0)).collect().mkString(", ")
+    logger.info(s"Query columns: $queryColumns")
+
+    QueryGenerator.generateDataQuery(queryColumns, owner, tableName, partitionInfo).toIterator
+  }
+
+  private def handleLoadedData(df: org.apache.spark.sql.DataFrame,
+                               hiveManager: HiveManager,
+                               schemaConverter: SchemaConverter,
+                               hivetable: String,
+                               numPartitions: Int,
+                               typeCheck: String): Unit = {
+    val tempTableName = s"${hivetable}_temp"
+
+    logger.info("Saving as temporary table.")
+    hiveManager.saveAsTemporaryTable(df, tempTableName, numPartitions)
+
+    logger.info("Analyzing and converting schema.")
+    if (typeCheck == "spark") {
+      val analyzedSchema = schemaConverter.analyzeAndConvertSchema(df)
+      logger.info("Inserting data into Hive table WITH ANALYZE")
+      hiveManager.insertDataIntoHiveTable(tempTableName, hivetable, StructType(analyzedSchema))
+    } else {
+      logger.info("Inserting data into Hive table.")
+      hiveManager.insertDataIntoHiveTable(tempTableName, hivetable, df.schema)
+    }
+
+    logger.info("Dropping temporary table.")
+    hiveManager.dropTemporaryTable(tempTableName)
+  }
 
   /**
    * Migrates data from an Oracle database to a Hive table.
@@ -53,79 +126,27 @@ object NewSpark {
 
     try {
       ResourceCleanup.start()
-      logger.info("Getting Spark session.")
-      val spark = SparkSessionFactory.getSparkSession()
+      val (dbReader, schemaConverter, hiveManager) =
+        createComponents(url, oracleUser, oraclePassword, owner, tableName, numPartitions, fetchSize, typeCheck)
 
-      logger.info("Initializing DBReader.")
-      val dbReader = new DbReader(spark, url, oracleUser, oraclePassword, numPartitions, fetchSize)
+      val oracleSchema = fetchSchema(dbReader, tableName, owner)
 
-      logger.info("Initializing SchemaConverter.")
-      val schemaConverter = new SchemaConverter(spark, owner, tableName, typeCheck, dbReader)
-
-      logger.info("Initializing HiveManager.")
-      val hiveManager = new HiveManager(spark)
-
-      logger.info("Generating schema query.")
-      val schemaQuery = QueryGenerator.generateSchemaQuery(tableName, owner)
-      logger.info(s"THIS IS SHEMAQUERY: ${schemaQuery}")
-
-      logger.info("Reading schema from Oracle database.")
-      val oracleSchema = dbReader.readFromJDBC(schemaQuery)
-      logger.info(s"THIS IS ORACLESHEMA: ${oracleSchema}")
-
-      logger.info("Casting schema.")
-      val castedSchema = schemaConverter.getColumnInfo(oracleSchema)
-      logger.info(s"THIS IS CASTEDSCHEMAA: ${castedSchema}")
-
-      logger.info("Getting future fields.")
-      val futureFields = castedSchema.map(info => schemaConverter.convertColumnInfoToStructField(info))
-      logger.info(s"THIS IS FUTUREFIELDS: ${futureFields}")
-
-      logger.info("Generating universal query.")
-      val universalQuery = QueryGenerator.generateUniversalQuery(owner, tableName)
-      logger.info(s"Universal query: $universalQuery")
-
-      logger.info("Getting partition info.")
-      val partitionInfo = dbReader.readFromJDBC(universalQuery)
-
-      logger.info("GETTING QUERYCOLUMNS.")
-      val queryColumns = oracleSchema.select("COLUMN_NAME").rdd.map(r => r(0)).collect().mkString(", ")
-      logger.info(s"THIS IS QUERYCOLUMNS: ${queryColumns}")
-
-      logger.info("Generating data queries.")
-      val dataQueries = QueryGenerator.generateDataQuery(queryColumns, owner, tableName, partitionInfo).toIterator
+      val dataQueries = prepareDataQueries(dbReader, oracleSchema, owner, tableName)
 
       logger.info("Loading data from Oracle database.")
       implicit val executionContext: ExecutionContextExecutor = ExecutionContext.global
-      dbReader.loadData(dataQueries, new StructType(schemaConverter.convert(oracleSchema).toArray)).onComplete {
-
-        case Success(df) =>
-          val numRows = df.count()
-          logger.info(s"Data loaded successfully. Number of rows: $numRows")
-
-          logger.info("Data loaded successfully.")
-          val tempTableName = s"${hivetable}_temp"
-
-          logger.info("Saving as temporary table.")
-          hiveManager.saveAsTemporaryTable(df, tempTableName, numPartitions)
-
-          logger.info("Analyzing and converting schema.")
-          if (typeCheck == "spark") {
-            val analyzedSchema = schemaConverter.analyzeAndConvertSchema(df)
-
-            logger.info("Inserting data into Hive table WITH ANALYZE")
-            hiveManager.insertDataIntoHiveTable(tempTableName, hivetable, StructType(analyzedSchema))
-          } else {
-
-            logger.info("Inserting data into Hive table.")
-            hiveManager.insertDataIntoHiveTable(tempTableName, hivetable, df.schema)
-          }
-          logger.info("Dropping temporary table.")
-          hiveManager.dropTemporaryTable(tempTableName)
-        case Failure(e) => logger.info(s"Failed to load data from Oracle to Hive. Reason: ${e.getMessage}")
-          e.printStackTrace()
-          throw e
-      }
+      dbReader
+        .loadData(dataQueries, new StructType(schemaConverter.convert(oracleSchema).toArray))
+        .onComplete {
+          case Success(df) =>
+            val numRows = df.count()
+            logger.info(s"Data loaded successfully. Number of rows: $numRows")
+            handleLoadedData(df, hiveManager, schemaConverter, hivetable, numPartitions, typeCheck)
+          case Failure(e) =>
+            logger.info(s"Failed to load data from Oracle to Hive. Reason: ${e.getMessage}")
+            e.printStackTrace()
+            throw e
+        }
 
     } catch {
       case e: Exception => logger.error(s"Migration failed due to:{}", e.getMessage)
