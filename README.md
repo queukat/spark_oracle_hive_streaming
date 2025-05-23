@@ -32,6 +32,31 @@ To run the application, execute the migrate function from NewSpark object. This 
 
 Please replace these parameters with your actual values.
 
+You can also set these parameters via environment variables:
+
+- `ORACLE_URL`
+- `ORACLE_USER`
+- `ORACLE_PASSWORD`
+- `ORACLE_TABLE`
+- `ORACLE_OWNER`
+- `HIVE_TABLE`
+- `NUM_PARTITIONS`
+- `FETCH_SIZE`
+- `TYPE_CHECK`
+
+To run the application with SBT use:
+
+```bash
+sbt run
+```
+
+After packaging the application you can execute it with `spark-submit`:
+
+```bash
+sbt assembly
+spark-submit --class queukat.spark_universal.NewSpark target/scala-2.12/OracleToHiveMigrator-assembly-2.0.jar
+```
+
 # Example
 
 ```scala
