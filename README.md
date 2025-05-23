@@ -122,11 +122,11 @@ This application currently supports only Oracle data types that can be converted
 If you'd like to contribute, please fork the repository and make changes as you'd like. Pull requests are warmly welcome.
 
 # Publishing to Maven
-Если необходимо разместить библиотеку в Maven Central, в репозитории есть workflow `.github/workflows/publish.yml`. При создании релиза он запускает `sbt +publishSigned` и отправляет артефакт в Sonatype.
+To publish your library to Maven Central, the repository includes a workflow file located at .github/workflows/publish.yml. This workflow is triggered upon creating a new GitHub release and executes the sbt +publishSigned command to sign and deploy artifacts to Sonatype.
 
-Перед использованием workflow в настройках репозитория нужно добавить секреты:
-- `SONATYPE_USERNAME` и `SONATYPE_PASSWORD` – логин и пароль от Sonatype;
-- `GPG_PRIVATE_KEY` и `GPG_PASSPHRASE` – ключ и пароль для подписи артефактов.
+Before utilizing this workflow, ensure the following secrets are added to your repository settings:
+- `SONATYPE_USERNAME` и `SONATYPE_PASSWORD` – Your Sonatype credentials;
+- `GPG_PRIVATE_KEY` и `GPG_PASSPHRASE` – Your GPG private key and its passphrase for artifact signing.
 
-После добавления секретов достаточно создать релиз на GitHub, и публикация произойдёт автоматически. Локально вы можете выполнить ту же команду `sbt +publishSigned`.
+Once the secrets are configured, simply create a new release on GitHub. The workflow will automatically handle the publishing process. Alternatively, you can execute the same publishing command locally using: `sbt +publishSigned`.
 
