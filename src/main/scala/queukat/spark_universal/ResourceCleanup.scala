@@ -15,6 +15,8 @@ object ResourceCleanup {
   // A ReferenceQueue to hold PhantomReference(s) of ResultSetIterator objects
   val queue = new ReferenceQueue[ResultSetIterator]()
 
+  @volatile private var started = false
+
   /**
    * A thread which runs indefinitely, waiting for PhantomReferences to be added to the queue.
    * Once a reference is added, it clears the reference.
@@ -27,25 +29,35 @@ object ResourceCleanup {
         logger.info("Resource cleaned up successfully.")
       }
     } catch {
-      case e: InterruptedException => logger.info("Resource cleanup thread interrupted.")
+      case _: InterruptedException => logger.info("Resource cleanup thread interrupted.")
     }
   })
 
+  cleanerThread.setDaemon(true)
+
   /**
-   * Starts the [[cleanerThread]].
+   * Starts the [[cleanerThread]]. It is safe to call this method multiple times.
    * It should be called to start the automatic resource cleanup.
    */
-  def start(): Unit = {
-    logger.info("Starting resource cleanup thread.")
-    cleanerThread.start()
+  def start(): Unit = synchronized {
+    if (!started) {
+      logger.info("Starting resource cleanup thread.")
+      cleanerThread.start()
+      started = true
+    } else {
+      logger.info("Resource cleanup thread already running.")
+    }
   }
 
   /**
    * Stops the [[cleanerThread]]. Should be called to stop the automatic resource cleanup,
    * typically when the cleanup is no longer required or the application is shutting down.
    */
-  def stop(): Unit = {
-    logger.info("Stopping resource cleanup thread.")
-    cleanerThread.interrupt()
+  def stop(): Unit = synchronized {
+    if (started) {
+      logger.info("Stopping resource cleanup thread.")
+      cleanerThread.interrupt()
+      started = false
+    }
   }
 }
