@@ -56,29 +56,7 @@ class HiveManager(spark: SparkSession) {
    */
   def saveAsTemporaryTable(df: DataFrame, tempTableName: String, numPartitions: Int): Unit = {
     val partitionedDf = if (numPartitions > 0) df.repartition(numPartitions) else df
-    try {
-      partitionedDf.write
-        .mode(SaveMode.Overwrite)
-        .format("orc")
-        .saveAsTable(tempTableName)
-    } catch {
-      case e: SparkException if e.getMessage.contains("[LOCATION_ALREADY_EXISTS]") =>
-        logger.error(s"##### WARNING: Location already exists. Attempting to delete and overwrite: ${e.getMessage} #####")
-        try {
-          spark.sql(s"DROP TABLE $tempTableName")
-          partitionedDf.write
-            .mode(SaveMode.Overwrite)
-            .format("orc")
-            .saveAsTable(tempTableName)
-        } catch {
-          case e: Exception =>
-            logger.error(s"##### ERROR: An error occurred while trying to delete and overwrite the table: ${e.getMessage} #####")
-            e.printStackTrace()
-        }
-      case e: Exception =>
-        logger.error(s"##### ERROR: An error occurred while saving the temporary table: ${e.getMessage} #####")
-        e.printStackTrace()
-    }
+    partitionedDf.createOrReplaceTempView(tempTableName)
   }
 
   /**
@@ -108,10 +86,8 @@ class HiveManager(spark: SparkSession) {
    */
   def dropTemporaryTable(tempTableName: String): Unit = {
     try {
-      spark.sql(s"DROP TABLE $tempTableName")
-    }
-
-    catch {
+      spark.catalog.dropTempView(tempTableName)
+    } catch {
       case e: Exception =>
         logger.error(s"##### ERROR: An error occurred while dropping the temporary table: ${e.getMessage} #####")
         e.printStackTrace()

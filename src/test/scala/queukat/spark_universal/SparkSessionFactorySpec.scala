@@ -11,11 +11,15 @@ class SparkSessionFactorySpec extends AnyFunSuite {
     SparkSession.clearActiveSession()
     SparkSession.clearDefaultSession()
 
-    val spark = SparkSessionFactory.getSparkSession("testApp", "local[1]")
+    val originalMaster = System.getProperty("spark.master")
+    System.clearProperty("spark.master")
+
+    val spark = SparkSessionFactory.getSparkSession("testApp", "local[*]")
     try {
-      assert(spark.sparkContext.master == "local[1]")
+      assert(spark.sparkContext.master == "local[*]")
     } finally {
       spark.stop()
+      if (originalMaster != null) System.setProperty("spark.master", originalMaster)
     }
   }
 }

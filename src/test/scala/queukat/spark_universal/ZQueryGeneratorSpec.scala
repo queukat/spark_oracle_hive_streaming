@@ -3,7 +3,7 @@ package queukat.spark_universal
 import org.scalatest.funsuite.AnyFunSuite
 import org.apache.spark.sql.SparkSession
 
-class QueryGeneratorSpec extends AnyFunSuite {
+class ZQueryGeneratorSpec extends AnyFunSuite {
 
   test("generateSchemaQuery escapes input") {
     val query = QueryGenerator.generateSchemaQuery("t'ab", "ow'ner")
