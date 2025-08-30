@@ -19,10 +19,10 @@ object SparkSessionFactory {
    * @param appName The name of the application.
    * @return A SparkSession with Hive support.
    */
-  def getSparkSession(appName: String = "OracleToHiveMigrator"): SparkSession = {
+  def getSparkSession(appName: String = "OracleToHiveMigrator", master: String = "yarn"): SparkSession = {
     SparkSession
       .builder()
-      .master("yarn")
+      .master(master)
       .appName(appName)
       .enableHiveSupport()
       .getOrCreate()

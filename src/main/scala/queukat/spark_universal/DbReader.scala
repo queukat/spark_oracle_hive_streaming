@@ -211,12 +211,30 @@ class DbReader(
     }
   }
 
-  def handlePendingQueries(): Unit = {
-    while (true) {
-      val query = pendingQueries.take()
-      downloadFromJDBC(query)
+  @volatile private var running = true
+
+  private def handlePendingQueries(): Unit = {
+    try {
+      while (running) {
+        val query = pendingQueries.take()
+        downloadFromJDBC(query)
+      }
+    } catch {
+      case _: InterruptedException =>
+        logger.info("Pending query handler interrupted")
     }
   }
 
-  new Thread(() => handlePendingQueries()).start()
+  private val pendingThread: Thread = {
+    val t = new Thread(() => handlePendingQueries())
+    t.setDaemon(true)
+    t.start()
+    t
+  }
+
+  def close(): Unit = {
+    running = false
+    pendingThread.interrupt()
+    threadPool.shutdown()
+  }
 }

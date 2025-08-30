@@ -55,9 +55,9 @@ class HiveManager(spark: SparkSession) {
    * @param numPartitions the number of partitions.
    */
   def saveAsTemporaryTable(df: DataFrame, tempTableName: String, numPartitions: Int): Unit = {
-
+    val partitionedDf = if (numPartitions > 0) df.repartition(numPartitions) else df
     try {
-      df.write
+      partitionedDf.write
         .mode(SaveMode.Overwrite)
         .format("orc")
         .saveAsTable(tempTableName)
@@ -66,15 +66,17 @@ class HiveManager(spark: SparkSession) {
         logger.error(s"##### WARNING: Location already exists. Attempting to delete and overwrite: ${e.getMessage} #####")
         try {
           spark.sql(s"DROP TABLE $tempTableName")
-          df.write
+          partitionedDf.write
             .mode(SaveMode.Overwrite)
             .format("orc")
             .saveAsTable(tempTableName)
         } catch {
-          case e: Exception => logger.error(s"##### ERROR: An error occurred while trying to delete and overwrite the table: ${e.getMessage} #####")
+          case e: Exception =>
+            logger.error(s"##### ERROR: An error occurred while trying to delete and overwrite the table: ${e.getMessage} #####")
             e.printStackTrace()
         }
-      case e: Exception => logger.error(s"##### ERROR: An error occurred while saving the temporary table: ${e.getMessage} #####")
+      case e: Exception =>
+        logger.error(s"##### ERROR: An error occurred while saving the temporary table: ${e.getMessage} #####")
         e.printStackTrace()
     }
   }
