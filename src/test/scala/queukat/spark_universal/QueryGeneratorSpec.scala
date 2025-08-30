@@ -14,7 +14,8 @@ class QueryGeneratorSpec extends AnyFunSuite {
   test("generateDataQuery returns queries") {
     val spark = SparkSession.builder().master("local[*]").appName("test").getOrCreate()
     import spark.implicits._
-    val df = Seq((1,1,1,1)).toDF("DATA_OBJECT_ID", "RELATIVE_FNO", "START_BLOCK_ID", "END_BLOCK_ID")
+    val one = BigDecimal(1).bigDecimal
+    val df = Seq((one, one, one, one)).toDF("DATA_OBJECT_ID", "RELATIVE_FNO", "START_BLOCK_ID", "END_BLOCK_ID")
     val queries = QueryGenerator.generateDataQuery("COL1", "OWNER", "TABLE", df)
     assert(queries.nonEmpty)
     spark.stop()
