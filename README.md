@@ -16,6 +16,15 @@ Clone the repository to your local machine.
 Ensure that Apache Spark 3.4 and Scala are properly installed on your machine.
 Ensure your Oracle and Hive databases are accessible and the JDBC driver for Oracle is correctly set up.
 
+# Testing
+
+Run the unit test suite with:
+
+```bash
+sbt test
+```
+
+
 # Running the Application
 
 To run the application, execute the migrate function from NewSpark object. This function requires the following parameters:
