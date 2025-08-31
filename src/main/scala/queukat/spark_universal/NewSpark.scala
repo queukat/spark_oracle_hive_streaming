@@ -124,10 +124,13 @@ object NewSpark {
                typeCheck: String
              ): Unit = {
 
+    var dbReader: DbReader = null
     try {
       ResourceCleanup.start()
-      val (dbReader, schemaConverter, hiveManager) =
-        createComponents(url, oracleUser, oraclePassword, owner, tableName, numPartitions, fetchSize, typeCheck)
+      val components = createComponents(url, oracleUser, oraclePassword, owner, tableName, numPartitions, fetchSize, typeCheck)
+      dbReader = components._1
+      val schemaConverter = components._2
+      val hiveManager = components._3
 
       val oracleSchema = fetchSchema(dbReader, tableName, owner)
 
@@ -149,10 +152,12 @@ object NewSpark {
         }
 
     } catch {
-      case e: Exception => logger.error(s"Migration failed due to:{}", e.getMessage)
+      case e: Exception =>
+        logger.error(s"Migration failed due to:{}", e.getMessage)
         e.printStackTrace()
         throw e
     } finally {
+      if (dbReader != null) dbReader.close()
       ResourceCleanup.stop()
     }
     logger.info("Migration finished.")

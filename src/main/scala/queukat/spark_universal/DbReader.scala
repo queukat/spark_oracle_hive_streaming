@@ -10,7 +10,7 @@ import queukat.spark_universal.ResourceCleanup.queue
 
 import java.sql.{Connection, PreparedStatement, ResultSet, SQLException}
 import java.util.concurrent.atomic.AtomicInteger
-import java.util.concurrent.{BlockingQueue, Callable, Executors, FutureTask, LinkedBlockingQueue, Semaphore, ThreadPoolExecutor}
+import java.util.concurrent.{BlockingQueue, Callable, Executors, FutureTask, LinkedBlockingQueue, Semaphore, ThreadPoolExecutor, TimeUnit}
 import scala.annotation.tailrec
 import scala.concurrent.{ExecutionContext, Future, blocking}
 import scala.util.Try
@@ -211,12 +211,42 @@ class DbReader(
     }
   }
 
-  def handlePendingQueries(): Unit = {
-    while (true) {
-      val query = pendingQueries.take()
-      downloadFromJDBC(query)
+  @volatile private var running = true
+
+  private def handlePendingQueries(): Unit = {
+    try {
+      while (running) {
+        val query = pendingQueries.take()
+        downloadFromJDBC(query)
+      }
+    } catch {
+      case _: InterruptedException =>
+        logger.info("Pending query handler interrupted")
     }
   }
 
-  new Thread(() => handlePendingQueries()).start()
+  private val pendingThread: Thread = {
+    val t = new Thread(() => handlePendingQueries())
+    t.setDaemon(true)
+    t
+  }
+
+  pendingThread.start()
+
+  def close(): Unit = {
+    running = false
+    pendingThread.interrupt()
+    threadPool.shutdown()
+    try {
+      if (!threadPool.awaitTermination(60, TimeUnit.SECONDS)) {
+        logger.warn("Thread pool did not terminate within the timeout. Forcing shutdown.")
+        threadPool.shutdownNow()
+      }
+    } catch {
+      case e: InterruptedException =>
+        logger.warn("Interrupted while waiting for thread pool termination. Forcing shutdown.", e)
+        threadPool.shutdownNow()
+        Thread.currentThread().interrupt()
+    }
+  }
 }
