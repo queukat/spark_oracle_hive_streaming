@@ -6,7 +6,7 @@ homepage := Some(url("https://github.com/queukat/spark_oracle_hive_streaming"))
 
 version := "2.0"
 
-scalaVersion := "2.12.17"
+scalaVersion := "2.12.18"
 
 val sparkVersion = "3.4.0"
 
@@ -38,14 +38,9 @@ scmInfo := Some(
   )
 )
 
-resolvers ++= Seq(
-  "Spark Packages Repo" at "https://dl.bintray.com/spark-packages/maven/",
-  "Maven Central" at "https://repo1.maven.org/maven2/",
-  "Sonatype Nexus" at "https://nexus.example.com/repository/maven-public/",
-  "JFrog Artifactory" at "https://artifactory.example.com/artifactory/public-repo/",
-  "MavenRepository" at  "https://mvnrepository.com/"
-
-)
+// Use the default Maven Central resolver; custom resolvers were removed
+// because some pointed to non-repository URLs which caused invalid
+// artifacts to be downloaded during dependency resolution.
 
 publishMavenStyle := true
 
