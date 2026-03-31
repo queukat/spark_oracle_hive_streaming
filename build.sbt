@@ -17,8 +17,6 @@ libraryDependencies ++= Seq(
   "org.apache.spark" %% "spark-sql" % sparkVersion % "provided",
   "org.apache.spark" %% "spark-hive" % sparkVersion % "provided",
   "com.oracle.database.jdbc" % "ojdbc8" % "21.9.0.0",
-  "com.oracle.database.jdbc" % "ucp" % "21.9.0.0",
-  "com.typesafe.scala-logging" %% "scala-logging" % "3.9.5",
   "org.scalatest" %% "scalatest" % "3.2.15" % Test
 )
 
@@ -55,10 +53,10 @@ pomIncludeRepository := { _ => false }
 
 
 description := """
-The Spark Universal Migrator is a data migration Spark application that fetches data from an Oracle database and stores it in a Hive database.
-It utilizes JDBC to connect to Oracle, processes and converts the data into a Hive-compatible schema, and then transfers it to Hive.
-The migration process employs iterators to generate queries for data retrieval and utilizes a BlockingQueue in conjunction with a ThreadPoolExecutor for parallel processing of data.
-Additionally, the application incorporates an Oracle connection pool to efficiently manage and reuse database connections, further optimizing performance and resource utilization during the migration process.
+The Spark Universal Migrator is a Scala/Spark library for full-load Oracle-to-Hive table migration.
+It captures a source snapshot SCN, reads Oracle rows through Spark JDBC using ROWID range queries,
+converts Oracle schema metadata into a Spark/Hive-compatible schema, and writes the result into Hive
+through a temporary table plus INSERT OVERWRITE.
 """
 
 licenses := List(
