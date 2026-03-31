@@ -18,10 +18,11 @@ class SchemaConverterSpec extends AnyFunSuite with SparkTestSession {
   }
 
   test("maps supported Oracle types to Spark types") {
-    import spark.implicits._
+    val localSpark = spark
+    import localSpark.implicits._
 
     val profile = Seq((BigDecimal(10).bigDecimal, BigDecimal(2).bigDecimal)).toDF("LEFT_DIGITS", "RIGHT_DIGITS")
-    val converter = new SchemaConverter(spark, "OWNER", "TABLE", "skip", new StubDbReader(profile), None)
+    val converter = new SchemaConverter(localSpark, "OWNER", "TABLE", "skip", new StubDbReader(profile), None)
 
     assert(converter.convertColumnInfoToStructField(ColumnInfo("TXT", "VARCHAR2", null, null)).dataType == StringType)
     assert(converter.convertColumnInfoToStructField(ColumnInfo("TS", "TIMESTAMP WITH TIME ZONE", null, null)).dataType == TimestampType)
@@ -30,10 +31,11 @@ class SchemaConverterSpec extends AnyFunSuite with SparkTestSession {
   }
 
   test("widens negative scale NUMBER to a safe decimal") {
-    import spark.implicits._
+    val localSpark = spark
+    import localSpark.implicits._
 
     val profile = Seq((BigDecimal(10).bigDecimal, BigDecimal(2).bigDecimal)).toDF("LEFT_DIGITS", "RIGHT_DIGITS")
-    val converter = new SchemaConverter(spark, "OWNER", "TABLE", "skip", new StubDbReader(profile), None)
+    val converter = new SchemaConverter(localSpark, "OWNER", "TABLE", "skip", new StubDbReader(profile), None)
 
     val field = converter.convertColumnInfoToStructField(ColumnInfo("NEG_SCALE", "NUMBER", "5", "-2"))
 
@@ -41,10 +43,11 @@ class SchemaConverterSpec extends AnyFunSuite with SparkTestSession {
   }
 
   test("profiles NUMBER without precision in oracle mode") {
-    import spark.implicits._
+    val localSpark = spark
+    import localSpark.implicits._
 
     val profile = Seq((BigDecimal(10).bigDecimal, BigDecimal(2).bigDecimal)).toDF("LEFT_DIGITS", "RIGHT_DIGITS")
-    val converter = new SchemaConverter(spark, "OWNER", "TABLE", "oracle", new StubDbReader(profile), Some(99L))
+    val converter = new SchemaConverter(localSpark, "OWNER", "TABLE", "oracle", new StubDbReader(profile), Some(99L))
 
     val field = converter.convertColumnInfoToStructField(ColumnInfo("PROFILED_NUM", "NUMBER", null, null))
 
@@ -52,10 +55,11 @@ class SchemaConverterSpec extends AnyFunSuite with SparkTestSession {
   }
 
   test("castToSchema reorders and casts columns") {
-    import spark.implicits._
+    val localSpark = spark
+    import localSpark.implicits._
 
     val profile = Seq((BigDecimal(10).bigDecimal, BigDecimal(2).bigDecimal)).toDF("LEFT_DIGITS", "RIGHT_DIGITS")
-    val converter = new SchemaConverter(spark, "OWNER", "TABLE", "skip", new StubDbReader(profile), None)
+    val converter = new SchemaConverter(localSpark, "OWNER", "TABLE", "skip", new StubDbReader(profile), None)
     val source = Seq(("1", "2.50")).toDF("ID", "AMOUNT")
     val targetSchema = StructType(Seq(
       StructField("AMOUNT", DecimalType(10, 2), nullable = true),
@@ -71,10 +75,11 @@ class SchemaConverterSpec extends AnyFunSuite with SparkTestSession {
   }
 
   test("throws on unsupported Oracle types") {
-    import spark.implicits._
+    val localSpark = spark
+    import localSpark.implicits._
 
     val profile = Seq((BigDecimal(10).bigDecimal, BigDecimal(2).bigDecimal)).toDF("LEFT_DIGITS", "RIGHT_DIGITS")
-    val converter = new SchemaConverter(spark, "OWNER", "TABLE", "skip", new StubDbReader(profile), None)
+    val converter = new SchemaConverter(localSpark, "OWNER", "TABLE", "skip", new StubDbReader(profile), None)
 
     intercept[UnsupportedOperationException] {
       converter.convertColumnInfoToStructField(ColumnInfo("DOC", "XMLTYPE", null, null))

@@ -10,7 +10,8 @@ class QueryGeneratorSpec extends AnyFunSuite with SparkTestSession {
   }
 
   test("generateDataQuery quotes identifiers and includes snapshot SCN") {
-    import spark.implicits._
+    val localSpark = spark
+    import localSpark.implicits._
 
     val partitionInfo = Seq((
       BigDecimal(1).bigDecimal,
