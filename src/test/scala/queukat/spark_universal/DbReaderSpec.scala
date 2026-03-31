@@ -5,8 +5,6 @@ import org.apache.spark.sql.types.{IntegerType, StringType, StructField, StructT
 import org.scalatest.funsuite.AnyFunSuite
 
 class DbReaderSpec extends AnyFunSuite with SparkTestSession {
-  import spark.implicits._
-
   private class StubDbReader(results: Map[String, DataFrame]) extends DbReader(
     spark,
     "jdbc:oracle:thin:@//localhost:1521/ORCL",
@@ -21,6 +19,8 @@ class DbReaderSpec extends AnyFunSuite with SparkTestSession {
   }
 
   test("captureSnapshotScn reads SCN through JDBC") {
+    import spark.implicits._
+
     val reader = new StubDbReader(
       Map("SELECT dbms_flashback.get_system_change_number AS CURRENT_SCN FROM dual" -> Seq(BigDecimal(42).bigDecimal).toDF("CURRENT_SCN"))
     )
@@ -29,6 +29,8 @@ class DbReaderSpec extends AnyFunSuite with SparkTestSession {
   }
 
   test("loadData unions Spark JDBC result DataFrames") {
+    import spark.implicits._
+
     val query1 = "select * from source_part_1"
     val query2 = "select * from source_part_2"
     val reader = new StubDbReader(

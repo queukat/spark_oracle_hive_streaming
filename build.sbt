@@ -12,6 +12,8 @@ val sparkVersion = "3.4.0"
 
 versionScheme := Some("early-semver")
 
+Test / parallelExecution := false
+
 libraryDependencies ++= Seq(
   "org.apache.spark" %% "spark-core" % sparkVersion % "provided",
   "org.apache.spark" %% "spark-sql" % sparkVersion % "provided",

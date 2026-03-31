@@ -6,8 +6,6 @@ import org.scalatest.funsuite.AnyFunSuite
 import queukat.spark_universal.models.ColumnInfo
 
 class SchemaConverterSpec extends AnyFunSuite with SparkTestSession {
-  import spark.implicits._
-
   private class StubDbReader(profile: DataFrame) extends DbReader(
     spark,
     "jdbc:oracle:thin:@//localhost:1521/ORCL",
@@ -20,6 +18,8 @@ class SchemaConverterSpec extends AnyFunSuite with SparkTestSession {
   }
 
   test("maps supported Oracle types to Spark types") {
+    import spark.implicits._
+
     val profile = Seq((BigDecimal(10).bigDecimal, BigDecimal(2).bigDecimal)).toDF("LEFT_DIGITS", "RIGHT_DIGITS")
     val converter = new SchemaConverter(spark, "OWNER", "TABLE", "skip", new StubDbReader(profile), None)
 
@@ -30,6 +30,8 @@ class SchemaConverterSpec extends AnyFunSuite with SparkTestSession {
   }
 
   test("widens negative scale NUMBER to a safe decimal") {
+    import spark.implicits._
+
     val profile = Seq((BigDecimal(10).bigDecimal, BigDecimal(2).bigDecimal)).toDF("LEFT_DIGITS", "RIGHT_DIGITS")
     val converter = new SchemaConverter(spark, "OWNER", "TABLE", "skip", new StubDbReader(profile), None)
 
@@ -39,6 +41,8 @@ class SchemaConverterSpec extends AnyFunSuite with SparkTestSession {
   }
 
   test("profiles NUMBER without precision in oracle mode") {
+    import spark.implicits._
+
     val profile = Seq((BigDecimal(10).bigDecimal, BigDecimal(2).bigDecimal)).toDF("LEFT_DIGITS", "RIGHT_DIGITS")
     val converter = new SchemaConverter(spark, "OWNER", "TABLE", "oracle", new StubDbReader(profile), Some(99L))
 
@@ -48,6 +52,8 @@ class SchemaConverterSpec extends AnyFunSuite with SparkTestSession {
   }
 
   test("castToSchema reorders and casts columns") {
+    import spark.implicits._
+
     val profile = Seq((BigDecimal(10).bigDecimal, BigDecimal(2).bigDecimal)).toDF("LEFT_DIGITS", "RIGHT_DIGITS")
     val converter = new SchemaConverter(spark, "OWNER", "TABLE", "skip", new StubDbReader(profile), None)
     val source = Seq(("1", "2.50")).toDF("ID", "AMOUNT")
@@ -65,6 +71,8 @@ class SchemaConverterSpec extends AnyFunSuite with SparkTestSession {
   }
 
   test("throws on unsupported Oracle types") {
+    import spark.implicits._
+
     val profile = Seq((BigDecimal(10).bigDecimal, BigDecimal(2).bigDecimal)).toDF("LEFT_DIGITS", "RIGHT_DIGITS")
     val converter = new SchemaConverter(spark, "OWNER", "TABLE", "skip", new StubDbReader(profile), None)
 

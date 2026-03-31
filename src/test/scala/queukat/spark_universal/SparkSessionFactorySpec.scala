@@ -4,11 +4,21 @@ import org.scalatest.funsuite.AnyFunSuite
 import org.apache.spark.sql.SparkSession
 
 class SparkSessionFactorySpec extends AnyFunSuite {
+  private def stopIfRunning(session: SparkSession): Unit = {
+    if (!session.sparkContext.isStopped) {
+      session.stop()
+    }
+  }
 
-  test("getSparkSession uses provided master") {
-    SparkSession.getActiveSession.foreach(_.stop())
+  private def resetSparkSessions(): Unit = {
+    SparkSession.getActiveSession.foreach(stopIfRunning)
+    SparkSession.getDefaultSession.foreach(stopIfRunning)
     SparkSession.clearActiveSession()
     SparkSession.clearDefaultSession()
+  }
+
+  test("getSparkSession uses provided master") {
+    resetSparkSessions()
 
     val originalMaster = System.getProperty("spark.master")
     System.clearProperty("spark.master")
@@ -17,15 +27,14 @@ class SparkSessionFactorySpec extends AnyFunSuite {
     try {
       assert(spark.sparkContext.master == "local[*]")
     } finally {
-      spark.stop()
+      stopIfRunning(spark)
+      resetSparkSessions()
       if (originalMaster != null) System.setProperty("spark.master", originalMaster)
     }
   }
 
   test("getSparkSession falls back to spark.master system property") {
-    SparkSession.getActiveSession.foreach(_.stop())
-    SparkSession.clearActiveSession()
-    SparkSession.clearDefaultSession()
+    resetSparkSessions()
 
     val originalMaster = System.getProperty("spark.master")
     System.setProperty("spark.master", "local[1]")
@@ -34,9 +43,8 @@ class SparkSessionFactorySpec extends AnyFunSuite {
     try {
       assert(spark.sparkContext.master == "local[1]")
     } finally {
-      spark.stop()
-      SparkSession.clearActiveSession()
-      SparkSession.clearDefaultSession()
+      stopIfRunning(spark)
+      resetSparkSessions()
       if (originalMaster != null) System.setProperty("spark.master", originalMaster) else System.clearProperty("spark.master")
     }
   }

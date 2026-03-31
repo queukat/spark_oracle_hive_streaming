@@ -5,13 +5,13 @@ import org.scalatest.funsuite.AnyFunSuite
 import java.util.UUID
 
 class HiveManagerSpec extends AnyFunSuite with SparkTestSession {
-  import spark.implicits._
-
   private def randomTableName(prefix: String): String = {
     s"${prefix}_${UUID.randomUUID().toString.replace("-", "")}"
   }
 
   test("insertDataIntoHiveTable creates a target table and overwrites existing data on rerun") {
+    import spark.implicits._
+
     val manager = new HiveManager(spark)
     val targetTable = randomTableName("target_table")
     val tempTable1 = randomTableName("temp_table")

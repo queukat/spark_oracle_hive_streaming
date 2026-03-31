@@ -3,8 +3,6 @@ package queukat.spark_universal
 import org.scalatest.funsuite.AnyFunSuite
 
 class QueryGeneratorSpec extends AnyFunSuite with SparkTestSession {
-  import spark.implicits._
-
   test("generateSchemaQuery escapes literal input") {
     val query = QueryGenerator.generateSchemaQuery("t'ab", "ow'ner")
     assert(query.contains("upper('t''ab')"))
@@ -12,6 +10,8 @@ class QueryGeneratorSpec extends AnyFunSuite with SparkTestSession {
   }
 
   test("generateDataQuery quotes identifiers and includes snapshot SCN") {
+    import spark.implicits._
+
     val partitionInfo = Seq((
       BigDecimal(1).bigDecimal,
       BigDecimal(2).bigDecimal,
