@@ -8,7 +8,7 @@ version := "2.0"
 
 scalaVersion := "2.12.18"
 
-val sparkVersion = "3.4.0"
+val sparkVersion = "3.5.7"
 
 versionScheme := Some("early-semver")
 

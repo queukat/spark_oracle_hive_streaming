@@ -4,7 +4,7 @@ Spark Universal Migrator is a Scala/Spark library for full-load table-by-table m
 
 # Requirements
 
-- Apache Spark 3.4
+- Apache Spark 3.5.7
 - Scala 2.12.x
 - Oracle as the source system
 - Hive metastore / Hive-enabled Spark as the target system
