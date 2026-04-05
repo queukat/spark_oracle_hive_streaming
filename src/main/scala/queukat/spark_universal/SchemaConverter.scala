@@ -22,18 +22,22 @@ class SchemaConverter(
   private val logger = LoggerFactory.getLogger(this.getClass)
 
   def getColumnInfo(oracleSchema: DataFrame): Seq[ColumnInfo] = {
-    logger.info("Getting column information from the Oracle schema.")
-    oracleSchema.select(
+    logger.info(s"${MigrationLogging.stage("SCHEMA")} Reading Oracle column metadata")
+    val columnInfo = oracleSchema.select(
       col("COLUMN_NAME").alias("columnName"),
       col("DATA_TYPE").alias("dataType"),
       col("DATA_PRECISION").cast(StringType).alias("dataPrecision"),
       col("DATA_SCALE").cast(StringType).alias("dataScale")
     ).as[ColumnInfo].collect().toList
+    logger.info(s"${MigrationLogging.success("SCHEMA")} Oracle column metadata ready ${MigrationLogging.kv("columns", columnInfo.size)}")
+    columnInfo
   }
 
   def convert(oracleSchema: DataFrame): Seq[StructField] = {
-    logger.info("Starting schema conversion.")
-    getColumnInfo(oracleSchema).map(convertColumnInfoToStructField)
+    logger.info(s"${MigrationLogging.stage("SCHEMA")} Converting Oracle schema to Spark types")
+    val converted = getColumnInfo(oracleSchema).map(convertColumnInfoToStructField)
+    logger.info(s"${MigrationLogging.success("SCHEMA")} Target Spark schema prepared ${MigrationLogging.kv("columns", converted.size)}")
+    converted
   }
 
   def castToSchema(df: DataFrame, targetSchema: StructType): DataFrame = {
@@ -42,6 +46,7 @@ class SchemaConverter(
       throw new IllegalArgumentException(s"Source DataFrame is missing columns required by the target schema: ${missingColumns.mkString(", ")}")
     }
 
+    logger.info(s"${MigrationLogging.stage("SCHEMA")} Casting DataFrame to target schema ${MigrationLogging.kv("columns", targetSchema.fields.length)}")
     val projectedColumns = targetSchema.fields.map { field =>
       col(field.name).cast(field.dataType).alias(field.name)
     }
@@ -50,7 +55,7 @@ class SchemaConverter(
   }
 
   def convertColumnInfoToStructField(info: ColumnInfo): StructField = {
-    logger.info(s"Converting column information to StructField for column: ${info.columnName}")
+    logger.debug(s"Converting Oracle column ${info.columnName} (${info.dataType}) to Spark StructField")
     val dataType = normalizedDataType(info) match {
       case "VARCHAR2" | "NVARCHAR2" | "CHAR" | "NCHAR" | "CLOB" | "NCLOB" | "LONG" => StringType
       case "DATE" | "TIMESTAMP" | "TIMESTAMP WITH TIME ZONE" | "TIMESTAMP WITH LOCAL TIME ZONE" => TimestampType
@@ -96,15 +101,25 @@ class SchemaConverter(
 
   private def inferNumberType(columnName: String): DataType = {
     val query = QueryGenerator.generateNumberProfileQuery(owner, tableName, columnName, snapshotScn)
+    logger.info(s"${MigrationLogging.stage("SCHEMA")} Profiling Oracle NUMBER column ${MigrationLogging.kv("column", columnName)}")
     val profileRow = dbReader.readFromJDBC(query).first()
     val leftDigits = extractInt(profileRow.get(0), defaultValue = 1)
     val rightDigits = extractInt(profileRow.get(1), defaultValue = 0)
     val precision = leftDigits + rightDigits
 
     if (precision <= 0 || precision > 38) {
-      logger.warn(s"Oracle NUMBER column $columnName exceeds Spark decimal precision or could not be profiled safely. Falling back to StringType.")
+      logger.warn(
+        s"${MigrationLogging.warning("SCHEMA")} Oracle NUMBER column $columnName exceeds Spark decimal precision " +
+          s"or could not be profiled safely. Falling back to StringType."
+      )
       StringType
     } else {
+      logger.info(
+        s"${MigrationLogging.success("SCHEMA")} Oracle NUMBER profiling complete " +
+          s"${MigrationLogging.kv("column", columnName)} " +
+          s"${MigrationLogging.kv("precision", precision)} " +
+          s"${MigrationLogging.kv("scale", math.max(0, rightDigits))}"
+      )
       DecimalType(precision, math.max(0, rightDigits))
     }
   }

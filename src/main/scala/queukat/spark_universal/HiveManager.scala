@@ -30,7 +30,14 @@ class HiveManager(spark: SparkSession) {
           s" PARTITIONED BY ($partitionFields)"
         }
 
+      logger.info(
+        s"${MigrationLogging.stage("HIVE")} Ensuring Hive table exists " +
+          s"${MigrationLogging.targetTable(hivetable)} " +
+          s"${MigrationLogging.kv("columns", tableSchemaWithoutPartitions.fields.length)} " +
+          s"${MigrationLogging.kv("partitionColumns", partitionColumns.mkString(","))}"
+      )
       spark.sql(s"CREATE TABLE IF NOT EXISTS $quotedTableName (${tableSchemaWithoutPartitions.toDDL})$partitionDDL")
+      logger.info(s"${MigrationLogging.success("HIVE")} Hive table ready ${MigrationLogging.targetTable(hivetable)}")
     } catch {
       case e: Exception =>
         logger.error(s"Failed to create Hive table $hivetable: ${e.getMessage}", e)
@@ -41,10 +48,17 @@ class HiveManager(spark: SparkSession) {
   def saveAsTemporaryTable(df: DataFrame, tempTableName: String, numPartitions: Int): Unit = {
     val partitionedDf = if (numPartitions > 0) df.repartition(numPartitions) else df
     try {
+      logger.info(
+        s"${MigrationLogging.stage("HIVE")} Saving temporary table " +
+          s"${MigrationLogging.targetTable(tempTableName)} " +
+          s"${MigrationLogging.kv("requestedPartitions", numPartitions)} " +
+          s"${MigrationLogging.kv("columns", df.columns.length)}"
+      )
       partitionedDf.write
         .mode(SaveMode.Overwrite)
         .format("orc")
         .saveAsTable(quoteTableName(tempTableName))
+      logger.info(s"${MigrationLogging.success("HIVE")} Temporary table saved ${MigrationLogging.targetTable(tempTableName)}")
     } catch {
       case e: Exception =>
         logger.error(s"Failed to save temporary table $tempTableName: ${e.getMessage}", e)
@@ -56,8 +70,15 @@ class HiveManager(spark: SparkSession) {
     try {
       val quotedTarget = quoteTableName(newHiveTable)
       val quotedTemp = quoteTableName(tempTableName)
+      logger.info(
+        s"${MigrationLogging.stage("HIVE")} Overwriting Hive table " +
+          s"${MigrationLogging.targetTable(newHiveTable)} " +
+          s"${MigrationLogging.kv("sourceTempTable", tempTableName)} " +
+          s"${MigrationLogging.kv("columns", hiveSchema.fields.length)}"
+      )
       createHiveTableIfNotExists(newHiveTable, hiveSchema, partitionColumns)
       spark.sql(s"INSERT OVERWRITE TABLE $quotedTarget SELECT * FROM $quotedTemp")
+      logger.info(s"${MigrationLogging.success("HIVE")} Hive overwrite completed ${MigrationLogging.targetTable(newHiveTable)}")
     } catch {
       case e: Exception =>
         logger.error(s"Failed to insert data into Hive table $newHiveTable: ${e.getMessage}", e)
@@ -67,7 +88,9 @@ class HiveManager(spark: SparkSession) {
 
   def dropTemporaryTable(tempTableName: String): Unit = {
     try {
+      logger.info(s"${MigrationLogging.stage("HIVE")} Dropping temporary table ${MigrationLogging.targetTable(tempTableName)}")
       spark.sql(s"DROP TABLE IF EXISTS ${quoteTableName(tempTableName)}")
+      logger.info(s"${MigrationLogging.success("HIVE")} Temporary table dropped ${MigrationLogging.targetTable(tempTableName)}")
     } catch {
       case e: Exception =>
         logger.error(s"Failed to drop temporary table $tempTableName: ${e.getMessage}", e)
@@ -79,10 +102,17 @@ class HiveManager(spark: SparkSession) {
     try {
       val quotedTableName = quoteTableName(hivetable)
       if (partitionName != null) {
+        logger.info(
+          s"${MigrationLogging.stage("HIVE")} Ensuring Hive partition exists " +
+            s"${MigrationLogging.targetTable(hivetable)} " +
+            s"${MigrationLogging.kv("partition", partitionName)} " +
+            s"${MigrationLogging.kv("subpartition", Option(subpartitionName).getOrElse("<none>"))}"
+        )
         spark.sql(s"ALTER TABLE $quotedTableName ADD IF NOT EXISTS PARTITION (partition_name='$partitionName')")
         if (subpartitionName != null) {
           spark.sql(s"ALTER TABLE $quotedTableName ADD IF NOT EXISTS PARTITION (partition_name='$partitionName', subpartition_name='$subpartitionName')")
         }
+        logger.info(s"${MigrationLogging.success("HIVE")} Hive partition metadata ready ${MigrationLogging.targetTable(hivetable)}")
       }
     } catch {
       case e: Exception =>

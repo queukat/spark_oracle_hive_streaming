@@ -68,6 +68,9 @@ object ExampleMigration {
 - The library expects Oracle users with access to the required metadata views used to compute extent ranges.
 - Unsupported Oracle types fail fast during schema conversion instead of being silently downgraded.
 - Temporary Hive table names are generated uniquely per migration run.
+- Logging stays on the existing `slf4j` facade so the host Spark application keeps control over the final backend.
+- The library now emits stage-oriented log messages such as `[MIGRATE]`, `[SCHEMA]`, `[LOAD]`, and `[HIVE]` for easier scanning.
+- ANSI color is opt-in/out through `-Dspark.universal.log.color=true|false`; by default the library only colors logs when it detects an interactive terminal.
 
 # Publishing
 

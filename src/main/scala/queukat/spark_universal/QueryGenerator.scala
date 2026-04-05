@@ -34,17 +34,21 @@ object QueryGenerator {
   def generateSchemaQuery(tableName: String, owner: String): String = {
     val safeTableName = safeSqlLiteral(tableName)
     val safeOwner = safeSqlLiteral(owner)
-    s"""SELECT t.COLUMN_NAME, t.DATA_TYPE, t.DATA_PRECISION, t.DATA_SCALE
+    val query =
+      s"""SELECT t.COLUMN_NAME, t.DATA_TYPE, t.DATA_PRECISION, t.DATA_SCALE
        |FROM ALL_TAB_COLUMNS t
        |WHERE t.TABLE_NAME = upper('$safeTableName') AND t.OWNER = upper('$safeOwner')
        |ORDER BY t.COLUMN_ID""".stripMargin
+    logger.debug(s"Generated Oracle schema query ${MigrationLogging.sqlPreview(query)}")
+    query
   }
 
   def generateUniversalQuery(owner: String, tableName: String): String = {
     val safeTableName = safeSqlLiteral(tableName)
     val safeOwner = safeSqlLiteral(owner)
 
-    s"""SELECT data_object_id, file_id, relative_fno, partition_name, subpartition_name,
+    val query =
+      s"""SELECT data_object_id, file_id, relative_fno, partition_name, subpartition_name,
        |MIN(start_block_id) AS start_block_id, MAX(end_block_id) AS end_block_id, SUM(blocks) AS blocks
        |FROM (SELECT o.data_object_id, p.partition_name, o.subobject_name as subpartition_name, e.file_id, e.relative_fno, e.block_id AS start_block_id,
        |e.block_id + e.blocks - 1 AS end_block_id, e.blocks
@@ -55,6 +59,8 @@ object QueryGenerator {
        |AND o.owner = p.table_owner(+) AND o.object_name = p.table_name(+) AND e.partition_name = p.partition_name(+)
        |AND o.owner = tsp.table_owner(+) AND o.object_name = tsp.table_name(+) AND o.subobject_name = tsp.subpartition_name(+))
        |GROUP BY data_object_id, file_id, relative_fno, partition_name, subpartition_name""".stripMargin
+    logger.debug(s"Generated Oracle extent query ${MigrationLogging.sqlPreview(query)}")
+    query
   }
 
   def generateDataQuery(
@@ -69,7 +75,14 @@ object QueryGenerator {
     val flashbackClause = snapshotScn.map(scn => s" AS OF SCN $scn").getOrElse("")
 
     try {
-      partitionInfo.collect().map { row =>
+      val partitions = partitionInfo.collect()
+      logger.info(
+        s"${MigrationLogging.stage("SQL")} Generating Oracle rowid queries " +
+          s"${MigrationLogging.kv("table", s"$owner.$tableName")} " +
+          s"${MigrationLogging.kv("segments", partitions.length)}"
+      )
+
+      val queries = partitions.map { row =>
         val dataObjectId = row.getAs[java.math.BigDecimal]("DATA_OBJECT_ID").toBigInteger.longValue()
         val relativeFno = row.getAs[java.math.BigDecimal]("RELATIVE_FNO").toBigInteger.longValue()
         val startBlockId = row.getAs[java.math.BigDecimal]("START_BLOCK_ID").toBigInteger.longValue()
@@ -79,6 +92,9 @@ object QueryGenerator {
            |WHERE rowid >= dbms_rowid.rowid_create(1, $dataObjectId, $relativeFno, $startBlockId, 0)
            |AND rowid <= dbms_rowid.rowid_create(1, $dataObjectId, $relativeFno, $endBlockId, 32767)""".stripMargin
       }
+
+      queries.headOption.foreach(query => logger.info(s"${MigrationLogging.stage("SQL")} First generated rowid query ${MigrationLogging.sqlPreview(query)}"))
+      queries
     } catch {
       case e: Exception =>
         logger.error(s"Failed to generate data query: ${e.getMessage}", e)
@@ -97,7 +113,8 @@ object QueryGenerator {
     val flashbackClause = snapshotScn.map(scn => s" AS OF SCN $scn").getOrElse("")
     val numericExpr = s"TO_CHAR(ABS($qualifiedColumn), 'TM9', 'NLS_NUMERIC_CHARACTERS=.,')"
 
-    s"""SELECT
+    val query =
+      s"""SELECT
        |MAX(CASE
        |  WHEN $qualifiedColumn IS NULL THEN 1
        |  WHEN INSTR($numericExpr, '.') > 0 THEN INSTR($numericExpr, '.') - 1
@@ -110,5 +127,7 @@ object QueryGenerator {
        |END) AS RIGHT_DIGITS
        |FROM $qualifiedTableName$flashbackClause
        |WHERE $qualifiedColumn IS NOT NULL""".stripMargin
+    logger.debug(s"Generated Oracle NUMBER profile query ${MigrationLogging.sqlPreview(query)}")
+    query
   }
 }

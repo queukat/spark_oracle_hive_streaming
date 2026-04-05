@@ -29,13 +29,20 @@ class DbReader(
     "driver" -> "oracle.jdbc.OracleDriver"
   )
 
-  logger.info("DbReader created")
+  logger.info(
+    s"${MigrationLogging.stage("JDBC")} DbReader initialized " +
+      s"${MigrationLogging.kv("numPartitions", numPartitions)} " +
+      s"${MigrationLogging.kv("fetchSize", fetchSize)}"
+  )
 
   def readFromJDBC(query: String): DataFrame = {
-    logger.info(s"Starting readFromJDBC with query: $query")
+    logger.info(s"${MigrationLogging.stage("JDBC")} Preparing JDBC read ${MigrationLogging.sqlPreview(query)}")
     val jdbcOptions = baseJdbcOptions + ("dbtable" -> s"(${query}) oracle_to_hive_src")
     val df = spark.read.format("jdbc").options(jdbcOptions).load()
-    logger.info("readFromJDBC completed successfully")
+    logger.info(
+      s"${MigrationLogging.success("JDBC")} JDBC DataFrame ready " +
+        s"${MigrationLogging.kv("columns", df.columns.length)}"
+    )
     df
   }
 
@@ -47,23 +54,38 @@ class DbReader(
       case n: java.lang.Number => n.longValue()
       case other => other.toString.toLong
     }
-    logger.info(s"Captured Oracle snapshot SCN: $snapshotScn")
+    logger.info(s"${MigrationLogging.success("SCN")} Captured Oracle snapshot ${MigrationLogging.kv("scn", snapshotScn)}")
     snapshotScn
   }
 
   def loadData(queryIterator: Iterator[String], fallbackSchema: StructType): DataFrame = {
-    logger.info("Starting loadData method")
-    val dataFrames = queryIterator.toList.map(readFromJDBC)
+    val queries = queryIterator.toVector
+    logger.info(s"${MigrationLogging.stage("LOAD")} Building source DataFrames ${MigrationLogging.kv("segments", queries.size)}")
+
+    if (queries.nonEmpty) {
+      logger.info(s"${MigrationLogging.stage("LOAD")} First rowid range ${MigrationLogging.sqlPreview(queries.head)}")
+    }
+
+    val dataFrames = queries.map(readFromJDBC)
 
     if (dataFrames.isEmpty) {
-      logger.info("No Oracle data partitions were generated. Returning an empty DataFrame with the fallback schema.")
+      logger.info(
+        s"${MigrationLogging.warning("LOAD")} No Oracle partitions were generated. " +
+          s"Returning empty DataFrame ${MigrationLogging.kv("columns", fallbackSchema.fields.length)}"
+      )
       spark.createDataFrame(spark.sparkContext.emptyRDD[Row], fallbackSchema)
     } else {
-      dataFrames.reduce(_.unionByName(_))
+      val merged = dataFrames.reduce(_.unionByName(_))
+      logger.info(
+        s"${MigrationLogging.success("LOAD")} Combined JDBC partitions " +
+          s"${MigrationLogging.kv("frames", dataFrames.size)} " +
+          s"${MigrationLogging.kv("columns", merged.columns.length)}"
+      )
+      merged
     }
   }
 
   def close(): Unit = {
-    logger.info("DbReader closed")
+    logger.info(s"${MigrationLogging.stage("JDBC")} DbReader closed")
   }
 }
