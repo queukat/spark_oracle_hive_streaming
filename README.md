@@ -1,5 +1,9 @@
 # Project: Spark Universal Migrator
 
+<!-- public-repo-status -->
+> Status: Active technical library. Issues are open for reproducible migration/runtime bugs and focused improvements.
+
+
 Spark Universal Migrator is a Scala/Spark library for full-load table-by-table migration from Oracle to Hive. It captures an Oracle snapshot SCN, reads source rows through Spark JDBC using `ROWID` range queries built from Oracle extent metadata, applies an explicit Oracle-to-Spark schema policy, and writes the result into Hive through a temporary table plus `INSERT OVERWRITE`.
 
 # Requirements
