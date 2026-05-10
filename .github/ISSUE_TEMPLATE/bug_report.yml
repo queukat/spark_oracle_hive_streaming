@@ -1,0 +1,36 @@
+name: Bug report
+description: Report a reproducible problem with this tool.
+title: "[Bug]: "
+labels: ["bug", "support"]
+body:
+  - type: input
+    id: version
+    attributes:
+      label: Version or commit
+      placeholder: "release tag, commit SHA, or branch"
+    validations:
+      required: true
+  - type: textarea
+    id: command
+    attributes:
+      label: Command or workflow
+      description: Include the command, input shape, and relevant environment details.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior
+    validations:
+      required: true
+  - type: textarea
+    id: diagnostics
+    attributes:
+      label: Logs, traces, or sample data
+      description: Remove secrets before posting.
